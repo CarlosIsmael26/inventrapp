@@ -38,7 +38,7 @@ function parseProducts(value: unknown): ProductInput[] {
 async function listProducts(businessId: string, response: ServerResponse): Promise<void> {
   const { db } = getFirebaseAdmin()
   const snapshot = await db.collection('businesses').doc(businessId).collection('products').get()
-  const products = snapshot.docs.map((document) => { const data = document.data(); const purchasePrice = Number(data.purchasePrice ?? data.unitValue ?? 0); return { id: document.id, code: data.code, name: data.name, brand: data.brand, quantity: data.quantity, purchasePrice, salePrice: Number(data.salePrice ?? calculateSalePrice(purchasePrice)), profitPercentage: Number(data.profitPercentage ?? DEFAULT_PROFIT_PERCENTAGE), createdAt: data.createdAt?.toDate?.().toISOString() ?? null, updatedAt: data.updatedAt?.toDate?.().toISOString() ?? null } }).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+  const products = snapshot.docs.filter((document) => document.data().status !== 'deleted').map((document) => { const data = document.data(); const purchasePrice = Number(data.purchasePrice ?? data.unitValue ?? 0); return { id: document.id, code: data.code, name: data.name, brand: data.brand, quantity: data.quantity, purchasePrice, salePrice: Number(data.salePrice ?? calculateSalePrice(purchasePrice)), profitPercentage: Number(data.profitPercentage ?? DEFAULT_PROFIT_PERCENTAGE), createdAt: data.createdAt?.toDate?.().toISOString() ?? null, updatedAt: data.updatedAt?.toDate?.().toISOString() ?? null } }).sort((a, b) => a.name.localeCompare(b.name, 'es'))
   json(response, { products })
 }
 

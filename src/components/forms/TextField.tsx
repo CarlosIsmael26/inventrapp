@@ -7,7 +7,9 @@ type TextFieldProps = {
   label: string
   value: string
   placeholder?: string
-  type?: 'text' | 'email' | 'tel'
+  type?: 'text' | 'email' | 'tel' | 'number'
+  min?: number
+  step?: number | 'any'
   helperText?: string
   error?: string
   disabled?: boolean
@@ -22,6 +24,8 @@ export function TextField({
   value,
   placeholder,
   type = 'text',
+  min,
+  step,
   helperText,
   error,
   disabled = false,
@@ -43,6 +47,8 @@ export function TextField({
       <input
         id={id}
         type={type}
+        min={min}
+        step={step}
         value={value}
         placeholder={placeholder}
         disabled={disabled}
