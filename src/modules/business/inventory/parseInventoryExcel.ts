@@ -13,11 +13,11 @@ function numberValue(value: ExcelCell): number | null {
 
 export async function parseInventoryExcel(file: File): Promise<InventoryImportPreview> {
   const rows = await readSheet(file)
-  if (!rows.length) return { fileName: file.name, products: [], errors: [{ row: 1, message: 'El archivo está vacío.' }], duplicateCodes: [] }
+  if (!rows.length) return { fileName: file.name, products: [], errors: [{ row: 1, message: 'El archivo está vacío.' }], duplicateCodes: [], existingCodes: [] }
   const headers = rows[0].map(normalizeHeader)
   const indexes = Object.fromEntries(requiredHeaders.map((header) => [header, headers.indexOf(header)])) as Record<typeof requiredHeaders[number], number>
   const missing = requiredHeaders.filter((header) => indexes[header] < 0)
-  if (missing.length) return { fileName: file.name, products: [], errors: [{ row: 1, message: `Faltan columnas obligatorias: ${missing.join(', ')}.` }], duplicateCodes: [] }
+  if (missing.length) return { fileName: file.name, products: [], errors: [{ row: 1, message: `Faltan columnas obligatorias: ${missing.join(', ')}.` }], duplicateCodes: [], existingCodes: [] }
   const products: InventoryProductInput[] = []; const errors: InventoryImportError[] = []; const codeRows = new Map<string, number[]>();
   rows.slice(1).forEach((row, position) => {
     const rowNumber = position + 2
@@ -34,5 +34,5 @@ export async function parseInventoryExcel(file: File): Promise<InventoryImportPr
   const duplicateCodes = [...codeRows.entries()].filter(([, positions]) => positions.length > 1).map(([code, positions]) => `${code} (filas ${positions.join(', ')})`)
   duplicateCodes.forEach((duplicate) => errors.push({ row: 0, code: duplicate, message: `Código duplicado: ${duplicate}.` }))
   if (!products.length && !errors.length) errors.push({ row: 2, message: 'El archivo no contiene productos.' })
-  return { fileName: file.name, products, errors, duplicateCodes }
+  return { fileName: file.name, products, errors, duplicateCodes, existingCodes: [] }
 }

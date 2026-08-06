@@ -43,18 +43,31 @@ async function importProducts(request: ApiRequest, response: ServerResponse, bus
   const products = parseProducts(await readRequestBody(request))
   const { db } = getFirebaseAdmin()
   const businessReference = db.collection('businesses').doc(businessId)
+  let createdCount = 0
+  let updatedCount = 0
   await db.runTransaction(async (transaction) => {
     const codeReferences = products.map((product) => businessReference.collection('productCodes').doc(codeKey(product.normalizedCode)))
     const reservations = await Promise.all(codeReferences.map((reference) => transaction.get(reference)))
-    const duplicates = reservations.flatMap((document, index) => document.exists ? [products[index].code] : [])
-    if (duplicates.length) throw new ApiError(409, `Ya existen estos códigos en el inventario: ${duplicates.slice(0, 10).join(', ')}${duplicates.length > 10 ? '…' : ''}`)
+    const productReferences = reservations.map((reservation) => reservation.exists && typeof reservation.data()?.productId === 'string' ? businessReference.collection('products').doc(String(reservation.data()?.productId)) : null)
+    const existingProducts = await Promise.all(productReferences.map((reference) => reference ? transaction.get(reference) : Promise.resolve(null)))
+    createdCount = 0
+    updatedCount = 0
     products.forEach((product, index) => {
+      const existingReference = productReferences[index]
+      if (reservations[index].exists) {
+        if (!existingReference || !existingProducts[index]?.exists) throw new ApiError(409, `El código ${product.code} tiene una referencia inconsistente. Contacta al administrador.`)
+        transaction.update(existingReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: FieldValue.increment(product.quantity), unitValue: product.unitValue, status: 'active', updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
+        updatedCount += 1
+        return
+      }
       const productReference = businessReference.collection('products').doc()
       transaction.create(codeReferences[index], { productId: productReference.id, normalizedCode: product.normalizedCode, createdAt: FieldValue.serverTimestamp() })
       transaction.create(productReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: product.quantity, unitValue: product.unitValue, status: 'active', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdBy: actorUid, updatedBy: actorUid })
+      createdCount += 1
     })
   })
-  json(response, { message: `${products.length} productos importados correctamente.` }, 201)
+  const parts = [createdCount ? `${createdCount} nuevos` : '', updatedCount ? `${updatedCount} actualizados` : ''].filter(Boolean)
+  json(response, { message: `Importación completada: ${parts.join(' y ')}.` }, 201)
 }
 
 export default async function handler(request: ApiRequest, response: ServerResponse): Promise<void> {
