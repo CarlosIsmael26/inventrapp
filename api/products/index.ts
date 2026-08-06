@@ -42,7 +42,7 @@ async function createProduct(request: ApiRequest, response: ServerResponse, busi
     if ((await transaction.get(codeReference)).exists) throw new ApiError(409, `Ya existe un producto con el código ${product.code}.`)
     transaction.create(codeReference, { productId: productReference.id, normalizedCode: product.normalizedCode, createdAt: FieldValue.serverTimestamp() })
     transaction.create(productReference, { ...product, status: 'active', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdBy: actorUid, updatedBy: actorUid })
-    transaction.create(movementReference, { productId: productReference.id, code: product.code, type: 'initial_stock', previousQuantity: 0, newQuantity: product.quantity, difference: product.quantity, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
+    transaction.create(movementReference, { productId: productReference.id, code: product.code, name: product.name, type: 'initial_stock', previousQuantity: 0, newQuantity: product.quantity, difference: product.quantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
   })
   json(response, { message: 'Producto creado correctamente.' }, 201)
 }
@@ -64,7 +64,7 @@ async function updateProduct(request: ApiRequest, response: ServerResponse, busi
     if (previousNormalizedCode !== product.normalizedCode) transaction.delete(business.collection('productCodes').doc(codeKey(previousNormalizedCode)))
     transaction.update(productReference, { ...product, updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
     if (previousQuantity !== product.quantity) {
-      transaction.create(business.collection('inventoryMovements').doc(), { productId, code: product.code, type: 'manual_adjustment', previousQuantity, newQuantity: product.quantity, difference: product.quantity - previousQuantity, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
+      transaction.create(business.collection('inventoryMovements').doc(), { productId, code: product.code, name: product.name, type: 'manual_adjustment', previousQuantity, newQuantity: product.quantity, difference: product.quantity - previousQuantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
     }
   })
   json(response, { message: 'Producto actualizado correctamente.' })
@@ -82,7 +82,7 @@ async function deleteProduct(response: ServerResponse, businessId: string, produ
     const quantity = Number(product.data()?.quantity ?? 0)
     transaction.delete(business.collection('productCodes').doc(codeKey(normalizedCode)))
     transaction.update(productReference, { status: 'deleted', quantity: 0, deletedAt: FieldValue.serverTimestamp(), deletedBy: actorUid, updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
-    transaction.create(business.collection('inventoryMovements').doc(), { productId, code, type: 'product_deleted', previousQuantity: quantity, newQuantity: 0, difference: -quantity, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
+    transaction.create(business.collection('inventoryMovements').doc(), { productId, code, name: String(product.data()?.name ?? ''), type: 'product_deleted', previousQuantity: quantity, newQuantity: 0, difference: -quantity, purchasePrice: Number(product.data()?.purchasePrice ?? 0), salePrice: Number(product.data()?.salePrice ?? 0), createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
   })
   json(response, { message: 'Producto eliminado correctamente.' })
 }

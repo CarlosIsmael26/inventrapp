@@ -6,7 +6,7 @@ import { verifyBusinessAccess } from '../_lib/businessAccess.js'
 import { getFirebaseAdmin } from '../_lib/firebaseAdmin.js'
 
 type ProductInput = { code: string; normalizedCode: string; name: string; brand: string; quantity: number; purchasePrice: number; salePrice: number; profitPercentage: number }
-const MAX_IMPORT_ROWS = 200
+const MAX_IMPORT_ROWS = 150
 const DEFAULT_PROFIT_PERCENTAGE = 20
 
 function codeKey(code: string): string { return Buffer.from(code, 'utf8').toString('base64url') }
@@ -46,6 +46,7 @@ async function importProducts(request: ApiRequest, response: ServerResponse, bus
   const products = parseProducts(await readRequestBody(request))
   const { db } = getFirebaseAdmin()
   const businessReference = db.collection('businesses').doc(businessId)
+  const movementReferences = products.map(() => businessReference.collection('inventoryMovements').doc())
   let createdCount = 0
   let updatedCount = 0
   await db.runTransaction(async (transaction) => {
@@ -59,13 +60,16 @@ async function importProducts(request: ApiRequest, response: ServerResponse, bus
       const existingReference = productReferences[index]
       if (reservations[index].exists) {
         if (!existingReference || !existingProducts[index]?.exists) throw new ApiError(409, `El código ${product.code} tiene una referencia inconsistente. Contacta al administrador.`)
+        const previousQuantity = Number(existingProducts[index]?.data()?.quantity ?? 0)
         transaction.update(existingReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: FieldValue.increment(product.quantity), purchasePrice: product.purchasePrice, salePrice: product.salePrice, profitPercentage: product.profitPercentage, status: 'active', updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
+        transaction.create(movementReferences[index], { productId: existingReference.id, code: product.code, name: product.name, type: 'excel_import', previousQuantity, newQuantity: previousQuantity + product.quantity, difference: product.quantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
         updatedCount += 1
         return
       }
       const productReference = businessReference.collection('products').doc()
       transaction.create(codeReferences[index], { productId: productReference.id, normalizedCode: product.normalizedCode, createdAt: FieldValue.serverTimestamp() })
       transaction.create(productReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: product.quantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, profitPercentage: product.profitPercentage, status: 'active', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdBy: actorUid, updatedBy: actorUid })
+      transaction.create(movementReferences[index], { productId: productReference.id, code: product.code, name: product.name, type: 'excel_import', previousQuantity: 0, newQuantity: product.quantity, difference: product.quantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, createdAt: FieldValue.serverTimestamp(), createdBy: actorUid })
       createdCount += 1
     })
   })

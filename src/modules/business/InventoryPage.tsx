@@ -1,10 +1,10 @@
-import { AlertTriangle, Boxes, FileSpreadsheet, PackageCheck, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Boxes, Download, FileSpreadsheet, PackageCheck, Pencil, Plus, Search, Trash2, Upload } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 
 import { DataTable, type DataTableColumn } from '../../components/data-table'
 import { Badge, Button, Card, ConfirmDialog, IconButton, Loader, useToast } from '../../components/ui'
 import { useBusiness } from '../../hooks/useBusiness'
-import { deleteInventoryProduct, getInventoryProducts, importInventoryProducts } from '../../services'
+import { deleteInventoryProduct, getInventoryAudit, getInventoryProducts, importInventoryProducts } from '../../services'
 import type { InventoryImportPreview, InventoryProduct } from '../../types/inventory'
 import { ProductDrawer } from './inventory/ProductDrawer'
 
@@ -24,10 +24,12 @@ export function InventoryPage() {
   const [drawer, setDrawer] = useState<{ product: InventoryProduct | null } | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<InventoryProduct | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const businessId = currentMembership?.businessId ?? ''
   const currency = currentMembership?.business.currency ?? 'USD'
   const canImport = currentMembership ? ['owner', 'admin', 'warehouse'].includes(currentMembership.role) : false
   const canDelete = currentMembership ? ['owner', 'admin'].includes(currentMembership.role) : false
+  const canExport = currentMembership ? ['owner', 'admin'].includes(currentMembership.role) : false
   const formatCurrency = (value: number) => new Intl.NumberFormat('es-EC', { style: 'currency', currency }).format(value)
 
   const load = useCallback(async () => {
@@ -82,6 +84,18 @@ export function InventoryPage() {
     finally { setDeleting(false) }
   }
 
+  async function exportAudit() {
+    try {
+      setExporting(true)
+      const audit = await getInventoryAudit(businessId)
+      const { exportInventoryAudit } = await import('./inventory/exportInventoryAudit')
+      await exportInventoryAudit(audit)
+      toast.success('Excel exportado', 'Se descargó el inventario actual y su historial de movimientos.')
+    } catch (requestError) {
+      toast.error('No fue posible exportar', requestError instanceof Error ? requestError.message : undefined)
+    } finally { setExporting(false) }
+  }
+
   const columns: DataTableColumn<InventoryProduct>[] = [
     { key: 'code', header: 'Código', render: (product) => <code>{product.code}</code> },
     { key: 'name', header: 'Producto', render: (product) => <div className="inventory-product"><strong>{product.name}</strong><small>{product.brand}</small></div> },
@@ -97,7 +111,7 @@ export function InventoryPage() {
     <div className="inventory-page">
       <header className="inventory-page__header">
         <div><span>Operación</span><h2>Inventario</h2><p>Controla costos, existencias y precios de venta.</p></div>
-        {canImport && <div className="inventory-page__header-actions"><input ref={fileInput} className="inventory-file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => void chooseFile(event)} /><Button variant="secondary" icon={<Plus size={18} />} onClick={() => setDrawer({ product: null })}>Crear producto</Button><Button icon={<Upload size={18} />} loading={reading} onClick={() => fileInput.current?.click()}>Cargar Excel</Button></div>}
+        {(canImport || canExport) && <div className="inventory-page__header-actions"><input ref={fileInput} className="inventory-file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => void chooseFile(event)} />{canImport && <Button variant="secondary" icon={<Plus size={18} />} onClick={() => setDrawer({ product: null })}>Crear producto</Button>}{canExport && <Button variant="secondary" icon={<Download size={18} />} loading={exporting} onClick={() => void exportAudit()}>Exportar Excel</Button>}{canImport && <Button icon={<Upload size={18} />} loading={reading} onClick={() => fileInput.current?.click()}>Cargar Excel</Button>}</div>}
       </header>
       <section className="inventory-stats">
         <Card><Boxes size={22} /><div><small>Productos</small><strong>{products.length}</strong></div></Card>
@@ -116,7 +130,7 @@ export function InventoryPage() {
         </section>
       )}
       <section className="inventory-panel">
-        <div className="inventory-toolbar"><div><Search size={18} /><input type="search" value={search} placeholder="Buscar por código, producto o marca..." onChange={(event) => setSearch(event.target.value)} /></div><span>Excel: valor = costo de compra · venta automática +20% · máximo 200 filas</span></div>
+        <div className="inventory-toolbar"><div><Search size={18} /><input type="search" value={search} placeholder="Buscar por código, producto o marca..." onChange={(event) => setSearch(event.target.value)} /></div><span>Excel: valor = costo de compra · venta automática +20% · máximo 150 filas</span></div>
         {error ? <div className="inventory-error"><p>{error}</p><Button variant="secondary" onClick={() => void load()}>Reintentar</Button></div> : loading ? <div className="inventory-loading"><Loader label="Cargando inventario..." /></div> : <DataTable columns={columns} data={filtered} getRowKey={(product) => product.id} emptyTitle="Inventario vacío" emptyDescription="Carga un archivo Excel para agregar tus primeros productos." />}
       </section>
       <ProductDrawer open={Boolean(drawer)} businessId={businessId} product={drawer?.product ?? null} onClose={() => setDrawer(null)} onSaved={() => void load()} />
