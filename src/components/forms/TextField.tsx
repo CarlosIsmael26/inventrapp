@@ -7,7 +7,7 @@ type TextFieldProps = {
   label: string
   value: string
   placeholder?: string
-  type?: 'text' | 'email' | 'tel' | 'number'
+  type?: 'text' | 'email' | 'tel' | 'number' | 'date'
   min?: number
   step?: number | 'any'
   helperText?: string

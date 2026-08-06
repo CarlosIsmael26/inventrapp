@@ -1,0 +1,97 @@
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import type { ServerResponse } from 'node:http'
+
+import { ApiError, type ApiRequest, handleAdminApiError, isRecord, json, readRequestBody, requiredString } from '../_lib/adminApi.js'
+import { verifyBusinessAccess } from '../_lib/businessAccess.js'
+import { getFirebaseAdmin } from '../_lib/firebaseAdmin.js'
+
+const TAX_RATE = 0.15
+const MAX_ITEMS = 50
+
+type RequestedItem = { productId: string; quantity: number }
+
+function roundMoney(value: number): number { return Math.round((value + Number.EPSILON) * 100) / 100 }
+function optionalString(value: unknown, maxLength: number): string | null {
+  if (value === null || value === undefined || value === '') return null
+  if (typeof value !== 'string') throw new ApiError(400, 'Uno de los datos enviados no es válido.')
+  const result = value.trim()
+  if (result.length > maxLength) throw new ApiError(400, 'Uno de los textos enviados es demasiado largo.')
+  return result || null
+}
+function parseItems(value: unknown): RequestedItem[] {
+  if (!Array.isArray(value) || !value.length) throw new ApiError(400, 'Agrega al menos un producto a la cotización.')
+  if (value.length > MAX_ITEMS) throw new ApiError(400, `Una cotización admite máximo ${MAX_ITEMS} productos.`)
+  const seen = new Set<string>()
+  return value.map((item) => {
+    if (!isRecord(item)) throw new ApiError(400, 'Uno de los productos no es válido.')
+    const productId = requiredString(item.productId, 'El producto es obligatorio.')
+    if (seen.has(productId)) throw new ApiError(409, 'Un producto está repetido en la cotización.')
+    seen.add(productId)
+    if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 999999) throw new ApiError(400, 'La cantidad de cada producto debe ser un entero mayor que cero.')
+    return { productId, quantity: item.quantity }
+  })
+}
+function isoDate(value: unknown): string | null {
+  if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') return value.toDate().toISOString()
+  return null
+}
+function serialize(document: FirebaseFirestore.QueryDocumentSnapshot): Record<string, unknown> {
+  const data = document.data()
+  return { id: document.id, ...data, validUntil: isoDate(data.validUntil), createdAt: isoDate(data.createdAt) }
+}
+
+async function listQuotations(businessId: string, response: ServerResponse): Promise<void> {
+  const { db } = getFirebaseAdmin()
+  const snapshot = await db.collection('businesses').doc(businessId).collection('quotations').orderBy('createdAt', 'desc').limit(500).get()
+  json(response, { quotations: snapshot.docs.map(serialize) })
+}
+
+async function createQuotation(request: ApiRequest, response: ServerResponse, businessId: string, actorUid: string): Promise<void> {
+  const body = await readRequestBody(request)
+  if (!isRecord(body)) throw new ApiError(400, 'Los datos enviados no son válidos.')
+  const customerName = requiredString(body.customerName, 'El nombre del cliente es obligatorio.')
+  if (customerName.length > 160) throw new ApiError(400, 'El nombre del cliente es demasiado largo.')
+  const customerEmail = optionalString(body.customerEmail, 200)
+  const customerPhone = optionalString(body.customerPhone, 40)
+  const notes = optionalString(body.notes, 1000)
+  const validUntilText = requiredString(body.validUntil, 'La fecha de validez es obligatoria.')
+  const validUntil = new Date(`${validUntilText}T23:59:59`)
+  if (Number.isNaN(validUntil.getTime()) || validUntil < new Date()) throw new ApiError(400, 'La fecha de validez no puede estar vencida.')
+  const requestedItems = parseItems(body.items)
+  const { db } = getFirebaseAdmin()
+  const businessReference = db.collection('businesses').doc(businessId)
+  const quoteReference = businessReference.collection('quotations').doc()
+  const counterReference = businessReference.collection('counters').doc('quotations')
+  let quotation: Record<string, unknown> = {}
+  await db.runTransaction(async (transaction) => {
+    const productReferences = requestedItems.map((item) => businessReference.collection('products').doc(item.productId))
+    const [counter, ...products] = await Promise.all([transaction.get(counterReference), ...productReferences.map((reference) => transaction.get(reference))])
+    const items = requestedItems.map((item, index) => {
+      const product = products[index]
+      if (!product.exists || product.data()?.status === 'deleted') throw new ApiError(409, 'Uno de los productos ya no está disponible.')
+      const data = product.data()
+      const unitPrice = Number(data?.salePrice ?? 0)
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new ApiError(409, `El producto ${String(data?.name ?? '')} no tiene un precio de venta válido.`)
+      return { productId: item.productId, code: String(data?.code ?? ''), name: String(data?.name ?? ''), brand: String(data?.brand ?? ''), quantity: item.quantity, unitPrice, total: roundMoney(item.quantity * unitPrice) }
+    })
+    const sequence = Number(counter.data()?.value ?? 0) + 1
+    const subtotal = roundMoney(items.reduce((sum, item) => sum + item.total, 0))
+    const tax = roundMoney(subtotal * TAX_RATE)
+    const total = roundMoney(subtotal + tax)
+    const profile = await transaction.get(db.collection('users').doc(actorUid))
+    const business = await transaction.get(businessReference)
+    quotation = { number: `COT-${String(sequence).padStart(6, '0')}`, customerName, customerEmail, customerPhone, notes, status: 'issued', taxRate: TAX_RATE, subtotal, tax, total, currency: String(business.data()?.currency ?? 'USD'), items, validUntil: Timestamp.fromDate(validUntil), createdAt: FieldValue.serverTimestamp(), createdBy: actorUid, createdByName: String(profile.data()?.displayName ?? profile.data()?.name ?? 'Usuario') }
+    transaction.set(counterReference, { value: sequence, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    transaction.create(quoteReference, quotation)
+  })
+  json(response, { message: 'Cotización creada correctamente.', quotation: { id: quoteReference.id, ...quotation, validUntil: validUntil.toISOString(), createdAt: new Date().toISOString() } }, 201)
+}
+
+export default async function handler(request: ApiRequest, response: ServerResponse): Promise<void> {
+  try {
+    const businessId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('businessId'), 'El negocio es obligatorio.')
+    if (request.method === 'GET') { await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await listQuotations(businessId, response) }
+    if (request.method === 'POST') { const access = await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await createQuotation(request, response, businessId, access.token.uid) }
+    response.statusCode = 405; response.setHeader('Allow', 'GET, POST'); response.end()
+  } catch (error) { handleAdminApiError(response, error) }
+}

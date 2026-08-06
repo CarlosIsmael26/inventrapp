@@ -1,11 +1,12 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { BarChart3, CircleDollarSign, ClipboardList, PackagePlus, Settings, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CircleDollarSign, PackagePlus, Settings, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
 
 import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
 import { InventoryPage } from '../modules/business/InventoryPage'
+import { QuotationsPage } from '../modules/business/QuotationsPage'
 import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
 import { BusinessModulePlaceholder } from '../modules/business/shared/BusinessModulePlaceholder'
 import { SuperAdminDashboardPage } from '../modules/superadmin/SuperAdminDashboardPage'
@@ -41,7 +42,7 @@ export function AppRouter() {
               <Route path="pos" element={<BusinessModulePlaceholder title="Ventas y POS" description="Aquí funcionará el punto de venta y el historial comercial." icon={ShoppingCart} />} />
               <Route path="clientes" element={<BusinessModulePlaceholder title="Clientes" description="Aquí administraremos clientes y su historial de compras." icon={Users} />} />
             </Route>
-            <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<BusinessModulePlaceholder title="Cotizaciones" description="Aquí prepararemos y convertiremos cotizaciones en ventas." icon={ClipboardList} />} /></Route>
+            <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<QuotationsPage />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier']} />}><Route path="caja" element={<BusinessModulePlaceholder title="Caja" description="Aquí controlaremos aperturas, cierres y movimientos de efectivo." icon={WalletCards} />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin']} />}>
               <Route path="creditos" element={<BusinessModulePlaceholder title="Créditos" description="Aquí controlaremos cuentas por cobrar y pagos pendientes." icon={CircleDollarSign} />} />
