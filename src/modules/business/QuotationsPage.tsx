@@ -29,7 +29,7 @@ export function QuotationsPage() {
   const active = quotations.filter((quote) => quote.validUntil >= new Date()).length
   const totalQuoted = quotations.reduce((sum, quote) => sum + quote.total, 0)
 
-  async function pdfFor(quotation: Quotation) { const { createQuotationPdf } = await import('./quotations/quotationPdf'); return createQuotationPdf(quotation, businessName) }
+  async function pdfFor(quotation: Quotation) { const { createQuotationPdf } = await import('./quotations/quotationPdf'); return createQuotationPdf(quotation, businessName, currentMembership?.business.logoUrl) }
   async function download(quotation: Quotation) {
     try { setPreparingId(quotation.id); const pdf = await pdfFor(quotation); const { downloadPdf } = await import('./quotations/quotationPdf'); downloadPdf(pdf.blob, pdf.fileName); toast.success('PDF generado', `Se descargó ${pdf.fileName}.`) }
     catch (pdfError) { toast.error('No fue posible generar el PDF', pdfError instanceof Error ? pdfError.message : undefined) }

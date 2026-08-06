@@ -13,6 +13,7 @@ import type { BusinessRole } from '../../types/membership'
 import { Button, EmptyState, Loader } from '../ui'
 
 import './BusinessLayout.scss'
+import './BusinessLogo.scss'
 
 type MenuItem = { to: string; label: string; icon: typeof LayoutDashboard; roles?: BusinessRole[] }
 type MenuGroup = { title: string; items: MenuItem[] }
@@ -61,12 +62,12 @@ export function BusinessLayout() {
       {mobileOpen && <button className="business-sidebar__backdrop" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />}
       <aside className={`business-sidebar ${mobileOpen ? 'business-sidebar--open' : ''}`}>
         <div className="business-brand"><div className="business-brand__logo">I</div><div><strong>Inventra</strong><span>Gestión comercial</span></div><button aria-label="Cerrar menú" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
-        <div className="business-switcher"><Store size={18} /><div><small>Negocio activo</small>{memberships.length > 1 ? <select value={currentMembership.id} onChange={(event) => { selectBusiness(event.target.value); navigate('/app'); setMobileOpen(false) }}>{memberships.map((item) => <option key={item.id} value={item.id}>{item.business.name}</option>)}</select> : <strong>{currentMembership.business.name}</strong>}</div><ChevronDown size={16} /></div>
+        <div className="business-switcher">{currentMembership.business.logoUrl ? <img className="business-logo-image" src={currentMembership.business.logoUrl} alt="" /> : <Store size={18} />}<div><small>Negocio activo</small>{memberships.length > 1 ? <select value={currentMembership.id} onChange={(event) => { selectBusiness(event.target.value); navigate('/app'); setMobileOpen(false) }}>{memberships.map((item) => <option key={item.id} value={item.id}>{item.business.name}</option>)}</select> : <strong>{currentMembership.business.name}</strong>}</div><ChevronDown size={16} /></div>
         <nav className="business-menu">{visibleGroups.map((group) => <div key={group.title}><span className="business-menu__section">{group.title}</span>{group.items.map((item) => <NavLink key={item.to} to={item.to} end={item.to === '/app'} onClick={() => setMobileOpen(false)}><item.icon size={19} /><span>{item.label}</span></NavLink>)}</div>)}</nav>
         <div className="business-sidebar__footer"><div className="business-profile"><div className="business-profile__avatar">{(businessUser?.displayName || profile?.displayName || 'U').charAt(0).toUpperCase()}</div><div><strong>{businessUser?.displayName || profile?.displayName || 'Usuario'}</strong><span>{roleLabels[currentMembership.role]}</span></div></div><button className="business-logout" onClick={() => void handleLogout()}><LogOut size={18} /><span>Cerrar sesión</span></button></div>
       </aside>
       <section className="business-content">
-        <header className="business-header"><button className="business-header__menu" aria-label="Abrir menú" onClick={() => setMobileOpen(true)}><Menu size={22} /></button><div><h1>{pageTitles[location.pathname] ?? 'Inventra'}</h1><p>{currentMembership.business.name}</p></div><div className="business-header__identity"><Building2 size={20} /><div><strong>{currentMembership.business.name}</strong><span>{roleLabels[currentMembership.role]}</span></div></div></header>
+        <header className="business-header"><button className="business-header__menu" aria-label="Abrir menú" onClick={() => setMobileOpen(true)}><Menu size={22} /></button><div><h1>{pageTitles[location.pathname] ?? 'Inventra'}</h1><p>{currentMembership.business.name}</p></div><div className="business-header__identity">{currentMembership.business.logoUrl ? <img className="business-logo-image" src={currentMembership.business.logoUrl} alt="" /> : <Building2 size={20} />}<div><strong>{currentMembership.business.name}</strong><span>{roleLabels[currentMembership.role]}</span></div></div></header>
         <div className="business-page"><Outlet /></div>
       </section>
     </div>

@@ -1,6 +1,7 @@
 export * from './authService'
 export * from './businessesService'
 export * from './businessTeamService'
+export * from './businessLogoService'
 export * from './inventoryService'
 export * from './quotationService'
 export * from './membershipsService'

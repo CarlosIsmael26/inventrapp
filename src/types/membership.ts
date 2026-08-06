@@ -25,6 +25,7 @@ export type UserBusinessMembership = {
     businessType: string
     currency: string
     timezone: string
+    logoUrl: string | null
   }
 }
 

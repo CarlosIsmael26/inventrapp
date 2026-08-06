@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { BarChart3, CircleDollarSign, PackagePlus, Settings, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CircleDollarSign, PackagePlus, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
 
 import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
+import { BusinessSettingsPage } from '../modules/business/BusinessSettingsPage'
 import { InventoryPage } from '../modules/business/InventoryPage'
 import { QuotationsPage } from '../modules/business/QuotationsPage'
 import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
@@ -47,7 +48,7 @@ export function AppRouter() {
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin']} />}>
               <Route path="creditos" element={<BusinessModulePlaceholder title="Créditos" description="Aquí controlaremos cuentas por cobrar y pagos pendientes." icon={CircleDollarSign} />} />
               <Route path="equipo" element={<BusinessTeamPage />} />
-              <Route path="configuracion" element={<BusinessModulePlaceholder title="Configuración" description="Aquí configuraremos los datos y preferencias del negocio." icon={Settings} />} />
+              <Route path="configuracion" element={<BusinessSettingsPage />} />
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'viewer']} />}><Route path="reportes" element={<BusinessModulePlaceholder title="Reportes" description="Aquí consultaremos indicadores comerciales y operativos." icon={BarChart3} />} /></Route>
           </Route>

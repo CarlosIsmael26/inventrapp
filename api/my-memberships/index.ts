@@ -28,7 +28,7 @@ export default async function handler(request: ApiRequest, response: ServerRespo
     const memberships = documents.flatMap((document) => {
       const data = document.data(); const business = businesses.get(String(data.businessId))
       if (!business || business.status !== 'active') return []
-      return [{ id: document.id, businessId: data.businessId, role: data.role, business: { id: data.businessId, name: business.name, slug: business.slug, businessType: business.businessType, currency: business.currency, timezone: business.timezone } }]
+      return [{ id: document.id, businessId: data.businessId, role: data.role, business: { id: data.businessId, name: business.name, slug: business.slug, businessType: business.businessType, currency: business.currency, timezone: business.timezone, logoUrl: typeof business.logoUrl === 'string' ? business.logoUrl : null } }]
     })
     const profile = await db.collection('users').doc(uid).get()
     json(response, { memberships, user: { displayName: profile.data()?.displayName ?? 'Usuario', email: profile.data()?.email ?? '' } })

@@ -10,19 +10,40 @@ function safeFilePart(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cliente'
 }
 
-export function createQuotationPdf(quotation: Quotation, businessName: string): { blob: Blob; fileName: string } {
+async function drawLogo(document: jsPDF, logoUrl: string | null | undefined): Promise<boolean> {
+  if (!logoUrl) return false
+  try {
+    const response = await fetch(logoUrl)
+    if (!response.ok) return false
+    const contentType = response.headers.get('content-type') ?? ''
+    const format = contentType.includes('png') ? 'PNG' : 'JPEG'
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    const properties = document.getImageProperties(bytes)
+    const ratio = Math.min(20 / properties.width, 20 / properties.height)
+    const width = properties.width * ratio
+    const height = properties.height * ratio
+    document.setFillColor(255, 255, 255)
+    document.roundedRect(15, 5, 24, 24, 3, 3, 'F')
+    document.addImage(bytes, format, 17 + (20 - width) / 2, 7 + (20 - height) / 2, width, height)
+    return true
+  } catch { return false }
+}
+
+export async function createQuotationPdf(quotation: Quotation, businessName: string, logoUrl?: string | null): Promise<{ blob: Blob; fileName: string }> {
   const document = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = document.internal.pageSize.getWidth()
   const pageHeight = document.internal.pageSize.getHeight()
   document.setFillColor(103, 68, 228)
   document.rect(0, 0, pageWidth, 34, 'F')
+  const hasLogo = await drawLogo(document, logoUrl)
+  const businessX = hasLogo ? 45 : 15
   document.setTextColor(255, 255, 255)
   document.setFont('helvetica', 'bold')
   document.setFontSize(18)
-  document.text(businessName, 15, 15)
+  document.text(businessName, businessX, 15)
   document.setFontSize(10)
   document.setFont('helvetica', 'normal')
-  document.text('Cotización comercial', 15, 23)
+  document.text('Cotización comercial', businessX, 23)
   document.setFont('helvetica', 'bold')
   document.setFontSize(15)
   document.text(quotation.number, pageWidth - 15, 17, { align: 'right' })
