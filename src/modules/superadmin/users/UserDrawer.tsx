@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 
 import { Drawer } from '../../../components/drawer'
 import {
@@ -11,9 +11,10 @@ import {
   Button,
   useToast,
 } from '../../../components/ui'
-import { createPlatformUser } from '../../../services'
+import { createPlatformUser, updatePlatformUser } from '../../../services'
 import type {
   PlatformRole,
+  PlatformUser,
   UserStatus,
 } from '../../../types/user'
 
@@ -27,6 +28,7 @@ type UserForm = {
 
 type UserDrawerProps = {
   open: boolean
+  user?: PlatformUser | null
   onClose: () => void
   onSaved?: () => void
 }
@@ -52,6 +54,7 @@ const statusOptions: SelectOption[] = [
 
 export function UserDrawer({
   open,
+  user,
   onClose,
   onSaved,
 }: UserDrawerProps) {
@@ -60,6 +63,26 @@ export function UserDrawer({
   const [form, setForm] = useState<UserForm>(initialForm)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const editing = Boolean(user)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    setForm(
+      user
+        ? {
+            displayName: user.displayName,
+            email: user.email,
+            temporaryPassword: '',
+            platformRole: user.platformRole,
+            status: user.status,
+          }
+        : initialForm,
+    )
+    setFormError('')
+  }, [open, user])
 
   function updateField<K extends keyof UserForm>(
     field: K,
@@ -104,7 +127,7 @@ export function UserDrawer({
       return
     }
 
-    if (form.temporaryPassword.length < 6) {
+    if (!editing && form.temporaryPassword.length < 6) {
       setFormError(
         'La contraseña temporal debe tener al menos 6 caracteres.',
       )
@@ -114,15 +137,22 @@ export function UserDrawer({
     try {
       setSaving(true)
 
-      const result = await createPlatformUser({
-        ...form,
-        displayName,
-        email,
-      })
+      const message = user
+        ? await updatePlatformUser({
+            uid: user.uid,
+            displayName,
+            platformRole: form.platformRole,
+            status: form.status,
+          })
+        : await createPlatformUser({
+            ...form,
+            displayName,
+            email,
+          })
 
       toast.success(
-        'Usuario creado',
-        result.message,
+        editing ? 'Usuario actualizado' : 'Usuario creado',
+        message,
       )
 
       resetForm()
@@ -132,12 +162,12 @@ export function UserDrawer({
       const message =
         error instanceof Error
           ? error.message
-          : 'No fue posible crear el usuario.'
+          : 'No fue posible guardar el usuario.'
 
       setFormError(message)
 
       toast.error(
-        'Error al crear usuario',
+        'Error al guardar usuario',
         message,
       )
     } finally {
@@ -148,8 +178,12 @@ export function UserDrawer({
   return (
     <Drawer
       open={open}
-      title="Crear usuario"
-      description="Registra un nuevo usuario y define su acceso inicial."
+      title={editing ? 'Editar usuario' : 'Crear usuario'}
+      description={
+        editing
+          ? 'Actualiza el nombre, rol y estado de acceso.'
+          : 'Registra un nuevo usuario y define su acceso inicial.'
+      }
       onClose={handleClose}
       footer={
         <>
@@ -183,7 +217,7 @@ export function UserDrawer({
           placeholder="Ej. Juan Pérez"
           value={form.displayName}
           required
-          disabled={saving}
+          disabled={saving || editing}
           onChange={(value) =>
             updateField('displayName', value)
           }
@@ -203,18 +237,20 @@ export function UserDrawer({
           }
         />
 
-        <PasswordField
-          id="temporaryPassword"
-          label="Contraseña temporal"
-          placeholder="Mínimo 6 caracteres"
-          value={form.temporaryPassword}
-          helperText="El usuario deberá cambiarla después de ingresar."
-          required
-          disabled={saving}
-          onChange={(value) =>
-            updateField('temporaryPassword', value)
-          }
-        />
+        {!editing && (
+          <PasswordField
+            id="temporaryPassword"
+            label="Contraseña temporal"
+            placeholder="Mínimo 6 caracteres"
+            value={form.temporaryPassword}
+            helperText="El usuario deberá cambiarla después de ingresar."
+            required
+            disabled={saving}
+            onChange={(value) =>
+              updateField('temporaryPassword', value)
+            }
+          />
+        )}
 
         <SelectField
           id="platformRole"

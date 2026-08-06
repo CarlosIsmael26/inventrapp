@@ -50,10 +50,7 @@ export function useUsers() {
         user.displayName
           .toLowerCase()
           .includes(normalizedSearch) ||
-        user.email.toLowerCase().includes(normalizedSearch) ||
-        user.businessName
-          .toLowerCase()
-          .includes(normalizedSearch)
+        user.email.toLowerCase().includes(normalizedSearch)
 
       const matchesStatus =
         statusFilter === 'all' ||

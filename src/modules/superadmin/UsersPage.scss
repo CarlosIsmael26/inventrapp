@@ -119,7 +119,7 @@ TABLA
   background:white;
   border:1px solid #ebe8f3;
   border-radius:20px;
-  overflow:hidden;
+  overflow:visible;
 }
 
 .users-toolbar{
@@ -304,6 +304,12 @@ FORMULARIO
 RESPONSIVE
 ==============================*/
 
+.users-table-loading{
+  min-height:280px;
+  display:grid;
+  place-items:center;
+}
+
 @media (max-width:1100px){
 
   .users-stats{
@@ -336,10 +342,73 @@ RESPONSIVE
     grid-template-columns:1fr;
   }
 
-  .users-table-loading {
-  min-height: 280px;
-  display: grid;
-  place-items: center;
 }
 
+.user-actions{
+  position:relative;
+  display:inline-flex;
+}
+
+.user-actions__menu{
+  position:absolute;
+  z-index:20;
+  top:calc(100% + 6px);
+  right:0;
+  width:220px;
+  padding:7px;
+  border:1px solid #e7e3ef;
+  border-radius:12px;
+  background:white;
+  box-shadow:0 14px 35px rgba(45,38,57,.16);
+
+  button{
+    width:100%;
+    min-height:40px;
+    padding:0 10px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:#4f485b;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font:inherit;
+    font-size:.84rem;
+    cursor:pointer;
+
+    &:hover:not(:disabled){
+      background:#f5f2ff;
+      color:#6744e4;
+    }
+
+    &:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+  }
+
+  .user-actions__danger{
+    color:#b42318;
+
+    &:hover:not(:disabled){
+      color:#b42318;
+      background:#fff1f0;
+    }
+  }
+}
+
+.users-error{
+  min-height:240px;
+  padding:32px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  text-align:center;
+
+  p{
+    margin:0;
+    color:#b42318;
+  }
 }

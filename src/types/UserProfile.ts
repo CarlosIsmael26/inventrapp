@@ -1,5 +1,4 @@
-export type PlatformRole = 'super_admin' | 'support' | 'user'
-export type UserStatus = 'active' | 'blocked' | 'inactive'
+import type { PlatformRole, UserStatus } from './user'
 
 export type UserProfile = {
   uid: string
