@@ -12,6 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Credenciales y claves privadas
+firebase-admin-key.json
+*firebase*admin*key*.json
+*service-account*.json
+*serviceAccount*.json
+*.pem
+*.key
+credentials.json
+credentials/
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+~$*
+.tmp/
+tmp/
+temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -28,3 +49,5 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
