@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { BarChart3, Boxes, CircleDollarSign, ClipboardList, PackagePlus, Settings, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CircleDollarSign, ClipboardList, PackagePlus, Settings, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
 
 import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
+import { InventoryPage } from '../modules/business/InventoryPage'
 import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
 import { BusinessModulePlaceholder } from '../modules/business/shared/BusinessModulePlaceholder'
 import { SuperAdminDashboardPage } from '../modules/superadmin/SuperAdminDashboardPage'
@@ -32,7 +33,7 @@ export function AppRouter() {
           <Route path="/app" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboardPage />} />
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'warehouse']} />}>
-              <Route path="inventario" element={<BusinessModulePlaceholder title="Inventario" description="Aquí administraremos productos, existencias, categorías y movimientos de inventario." icon={Boxes} />} />
+              <Route path="inventario" element={<InventoryPage />} />
               <Route path="compras" element={<BusinessModulePlaceholder title="Compras" description="Aquí registraremos órdenes, recepciones y costos de compra." icon={PackagePlus} />} />
               <Route path="proveedores" element={<BusinessModulePlaceholder title="Proveedores" description="Aquí gestionaremos los proveedores vinculados al negocio." icon={Truck} />} />
             </Route>
