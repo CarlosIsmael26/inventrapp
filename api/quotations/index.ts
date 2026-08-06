@@ -37,7 +37,17 @@ function isoDate(value: unknown): string | null {
 }
 function serialize(document: FirebaseFirestore.QueryDocumentSnapshot): Record<string, unknown> {
   const data = document.data()
-  return { id: document.id, ...data, validUntil: isoDate(data.validUntil), createdAt: isoDate(data.createdAt) }
+  return { id: document.id, ...data, validUntil: isoDate(data.validUntil), createdAt: isoDate(data.createdAt), convertedAt: isoDate(data.convertedAt) }
+}
+
+async function deleteQuotation(response: ServerResponse, businessId: string, quotationId: string): Promise<void> {
+  const { db } = getFirebaseAdmin()
+  const reference = db.collection('businesses').doc(businessId).collection('quotations').doc(quotationId)
+  const quotation = await reference.get()
+  if (!quotation.exists) throw new ApiError(404, 'La cotización ya no existe.')
+  if (quotation.data()?.status === 'converted') throw new ApiError(409, 'No puedes eliminar una cotización que ya fue convertida en venta.')
+  await reference.delete()
+  json(response, { message: 'Cotización eliminada correctamente.' })
 }
 
 async function listQuotations(businessId: string, response: ServerResponse): Promise<void> {
@@ -92,6 +102,7 @@ export default async function handler(request: ApiRequest, response: ServerRespo
     const businessId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('businessId'), 'El negocio es obligatorio.')
     if (request.method === 'GET') { await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await listQuotations(businessId, response) }
     if (request.method === 'POST') { const access = await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await createQuotation(request, response, businessId, access.token.uid) }
-    response.statusCode = 405; response.setHeader('Allow', 'GET, POST'); response.end()
+    if (request.method === 'DELETE') { await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); const quotationId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('quotationId'), 'La cotización es obligatoria.'); return await deleteQuotation(response, businessId, quotationId) }
+    response.statusCode = 405; response.setHeader('Allow', 'GET, POST, DELETE'); response.end()
   } catch (error) { handleAdminApiError(response, error) }
 }

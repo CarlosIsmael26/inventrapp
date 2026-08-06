@@ -34,7 +34,7 @@ export async function exportInventoryAudit(audit: InventoryAudit): Promise<void>
     ['Código', 'Producto', 'Marca', 'Cantidad', 'Costo compra', 'Ganancia %', 'Precio venta', 'Costo total', 'Venta total', 'Última actualización'].map(headerCell),
     ...audit.products.map((product): Row => [textCell(product.code), textCell(product.name), textCell(product.brand), numberCell(product.quantity), numberCell(product.purchasePrice, currencyFormat), numberCell(product.profitPercentage, '0.00"%"'), numberCell(product.salePrice, currencyFormat), numberCell(product.quantity * product.purchasePrice, currencyFormat), numberCell(product.quantity * product.salePrice, currencyFormat), dateCell(product.updatedAt)]),
   ]
-  const movementLabels: Record<string, string> = { initial_stock: 'Creación manual', manual_adjustment: 'Ajuste manual', product_deleted: 'Producto eliminado', excel_import: 'Carga por Excel' }
+  const movementLabels: Record<string, string> = { initial_stock: 'Creación manual', manual_adjustment: 'Ajuste manual', product_deleted: 'Producto eliminado', excel_import: 'Carga por Excel', sale: 'Venta' }
   const movementRows: Row[] = [
     [titleCell(`Movimientos de inventario — ${audit.business.name}`, movementColumns), ...Array(movementColumns - 1).fill(null)],
     [subtitleCell(`Historial disponible: ${audit.movements.length} movimientos${audit.movementLimitReached ? ' (límite alcanzado)' : ''}`, movementColumns), ...Array(movementColumns - 1).fill(null)],

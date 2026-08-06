@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { BarChart3, CircleDollarSign, PackagePlus, ShoppingCart, Truck, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CircleDollarSign, PackagePlus, Truck, Users, WalletCards } from 'lucide-react'
 
 import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
@@ -8,6 +8,7 @@ import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage
 import { BusinessSettingsPage } from '../modules/business/BusinessSettingsPage'
 import { InventoryPage } from '../modules/business/InventoryPage'
 import { QuotationsPage } from '../modules/business/QuotationsPage'
+import { SalesPage } from '../modules/business/SalesPage'
 import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
 import { BusinessModulePlaceholder } from '../modules/business/shared/BusinessModulePlaceholder'
 import { SuperAdminDashboardPage } from '../modules/superadmin/SuperAdminDashboardPage'
@@ -40,7 +41,7 @@ export function AppRouter() {
               <Route path="proveedores" element={<BusinessModulePlaceholder title="Proveedores" description="Aquí gestionaremos los proveedores vinculados al negocio." icon={Truck} />} />
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier', 'seller']} />}>
-              <Route path="pos" element={<BusinessModulePlaceholder title="Ventas y POS" description="Aquí funcionará el punto de venta y el historial comercial." icon={ShoppingCart} />} />
+              <Route path="pos" element={<SalesPage />} />
               <Route path="clientes" element={<BusinessModulePlaceholder title="Clientes" description="Aquí administraremos clientes y su historial de compras." icon={Users} />} />
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<QuotationsPage />} /></Route>

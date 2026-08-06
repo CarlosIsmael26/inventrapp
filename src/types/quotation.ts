@@ -1,4 +1,4 @@
-export type QuotationStatus = 'issued'
+export type QuotationStatus = 'issued' | 'converted'
 
 export type QuotationItem = {
   productId: string
@@ -28,6 +28,8 @@ export type Quotation = {
   createdAt: Date | null
   createdBy: string
   createdByName: string
+  saleId?: string | null
+  convertedAt?: Date | null
 }
 
 export type QuotationInput = {

@@ -1,10 +1,11 @@
-import { CalendarCheck, Download, FileText, Mail, MessageCircle, Plus, ReceiptText, Search } from 'lucide-react'
+import { CalendarCheck, Download, FileText, Mail, MessageCircle, Plus, ReceiptText, Search, ShoppingCart, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { DataTable, type DataTableColumn } from '../../components/data-table'
-import { Badge, Button, Card, IconButton, useToast } from '../../components/ui'
+import { Badge, Button, Card, ConfirmDialog, IconButton, useToast } from '../../components/ui'
 import { useBusiness } from '../../hooks/useBusiness'
-import { getInventoryProducts } from '../../services'
+import { deleteQuotation, getInventoryProducts } from '../../services'
 import type { InventoryProduct } from '../../types/inventory'
 import type { Quotation } from '../../types/quotation'
 import { QuoteDrawer } from './quotations/QuoteDrawer'
@@ -14,6 +15,7 @@ import './QuotationsPage.scss'
 
 export function QuotationsPage() {
   const toast = useToast()
+  const navigate = useNavigate()
   const { currentMembership } = useBusiness()
   const businessId = currentMembership?.businessId ?? ''
   const businessName = currentMembership?.business.name ?? 'Negocio'
@@ -23,6 +25,8 @@ export function QuotationsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [preparingId, setPreparingId] = useState<string | null>(null)
+  const [quotationToDelete, setQuotationToDelete] = useState<Quotation | null>(null)
+  const [deleting, setDeleting] = useState(false)
   useEffect(() => { if (businessId) void getInventoryProducts(businessId).then(setProducts).catch(() => setProducts([])) }, [businessId])
   const formatMoney = (value: number) => new Intl.NumberFormat('es-EC', { style: 'currency', currency }).format(value)
   const filtered = useMemo(() => { const value = search.trim().toLowerCase(); return value ? quotations.filter((quote) => quote.number.toLowerCase().includes(value) || quote.customerName.toLowerCase().includes(value) || quote.customerEmail?.toLowerCase().includes(value)) : quotations }, [quotations, search])
@@ -69,6 +73,7 @@ export function QuotationsPage() {
     } catch (shareError) { if (shareError instanceof DOMException && shareError.name === 'AbortError') return; toast.error('No fue posible compartir', shareError instanceof Error ? shareError.message : undefined) }
     finally { setPreparingId(null) }
   }
+  async function remove() { if (!quotationToDelete) return; try { setDeleting(true); const message = await deleteQuotation(businessId, quotationToDelete.id); toast.success('Cotización eliminada', message); setQuotationToDelete(null); await reload() } catch (requestError) { toast.error('No fue posible eliminar', requestError instanceof Error ? requestError.message : undefined) } finally { setDeleting(false) } }
 
   const columns: DataTableColumn<Quotation>[] = [
     { key: 'number', header: 'Cotización', render: (quote) => <div className="quote-number"><strong>{quote.number}</strong><small>{quote.createdAt?.toLocaleDateString('es-EC') ?? 'Sin fecha'}</small></div> },
@@ -77,8 +82,8 @@ export function QuotationsPage() {
     { key: 'subtotal', header: 'Subtotal', align: 'right', render: (quote) => formatMoney(quote.subtotal) },
     { key: 'tax', header: 'IVA 15%', align: 'right', render: (quote) => formatMoney(quote.tax) },
     { key: 'total', header: 'Total', align: 'right', render: (quote) => <strong>{formatMoney(quote.total)}</strong> },
-    { key: 'valid', header: 'Validez', render: (quote) => <Badge variant={quote.validUntil >= new Date() ? 'success' : 'warning'}>{quote.validUntil >= new Date() ? `Hasta ${quote.validUntil.toLocaleDateString('es-EC')}` : 'Vencida'}</Badge> },
-    { key: 'actions', header: '', align: 'right', render: (quote) => <div className="quotation-actions"><IconButton icon={<Download size={16} />} label={`Descargar ${quote.number}`} disabled={preparingId === quote.id} onClick={() => void download(quote)} /><IconButton icon={<Mail size={16} />} label={`Enviar ${quote.number} por correo`} disabled={preparingId === quote.id} onClick={() => void shareEmail(quote)} /><IconButton icon={<MessageCircle size={16} />} label={`Enviar ${quote.number} por WhatsApp`} disabled={preparingId === quote.id} onClick={() => void shareWhatsApp(quote)} /></div> },
+    { key: 'valid', header: 'Estado', render: (quote) => quote.status === 'converted' ? <Badge variant="success">Convertida</Badge> : <Badge variant={quote.validUntil >= new Date() ? 'info' : 'warning'}>{quote.validUntil >= new Date() ? `Hasta ${quote.validUntil.toLocaleDateString('es-EC')}` : 'Vencida'}</Badge> },
+    { key: 'actions', header: '', align: 'right', render: (quote) => <div className="quotation-actions">{quote.status !== 'converted' && <IconButton icon={<ShoppingCart size={16} />} label={`Convertir ${quote.number} en venta`} onClick={() => navigate(`/app/pos?quotationId=${encodeURIComponent(quote.id)}`)} />}<IconButton icon={<Download size={16} />} label={`Descargar ${quote.number}`} disabled={preparingId === quote.id} onClick={() => void download(quote)} /><IconButton icon={<Mail size={16} />} label={`Enviar ${quote.number} por correo`} disabled={preparingId === quote.id} onClick={() => void shareEmail(quote)} /><IconButton icon={<MessageCircle size={16} />} label={`Enviar ${quote.number} por WhatsApp`} disabled={preparingId === quote.id} onClick={() => void shareWhatsApp(quote)} />{quote.status !== 'converted' && <IconButton icon={<Trash2 size={16} />} label={`Eliminar ${quote.number}`} variant="danger" onClick={() => setQuotationToDelete(quote)} />}<ConfirmDialog open={quotationToDelete?.id === quote.id} title="Eliminar cotización" description={`Se eliminará ${quote.number}. Esta acción no afecta el inventario.`} confirmText="Eliminar" loading={deleting} onClose={() => setQuotationToDelete(null)} onConfirm={() => void remove()} /></div> },
   ]
   return <div className="quotations-page"><header className="quotations-page__header"><div><span>Operación</span><h2>Cotizaciones</h2><p>Prepara propuestas con precios de venta e IVA del 15%.</p></div><Button icon={<Plus size={18} />} onClick={() => setDrawerOpen(true)}>Nueva cotización</Button></header><section className="quotation-stats"><Card><ReceiptText size={22} /><div><small>Cotizaciones</small><strong>{quotations.length}</strong></div></Card><Card><CalendarCheck size={22} /><div><small>Vigentes</small><strong>{active}</strong></div></Card><Card><FileText size={22} /><div><small>Valor cotizado</small><strong>{formatMoney(totalQuoted)}</strong></div></Card></section><section className="quotations-panel"><div className="quotations-toolbar"><div><Search size={18} /><input type="search" value={search} placeholder="Buscar por número, cliente o correo..." onChange={(event) => setSearch(event.target.value)} /></div><span>Los precios quedan guardados como fueron cotizados.</span></div>{error ? <div className="quotations-error"><p>{error}</p><Button variant="secondary" onClick={() => void reload()}>Reintentar</Button></div> : <DataTable columns={columns} data={filtered} getRowKey={(quote) => quote.id} loading={loading} emptyTitle="No hay cotizaciones" emptyDescription="Crea la primera cotización utilizando los productos del inventario." />}</section><QuoteDrawer open={drawerOpen} businessId={businessId} currency={currency} products={products} onClose={() => setDrawerOpen(false)} onSaved={() => void reload()} /></div>
 }
