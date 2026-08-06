@@ -1,14 +1,12 @@
 import { cert, getApp, getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
-import { getStorage } from 'firebase-admin/storage'
 
 const ADMIN_APP_NAME = 'inventrapp-admin'
 
 type FirebaseAdminServices = {
   auth: ReturnType<typeof getAuth>
   db: ReturnType<typeof getFirestore>
-  storage: ReturnType<typeof getStorage>
 }
 
 function getRequiredEnvironmentVariable(name: string): string {
@@ -27,7 +25,6 @@ export function getFirebaseAdmin(): FirebaseAdminServices {
   )
 
   const projectId = getRequiredEnvironmentVariable('FIREBASE_ADMIN_PROJECT_ID')
-  const storageBucket = process.env.FIREBASE_STORAGE_BUCKET?.trim() || process.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || `${projectId}.firebasestorage.app`
   const app =
     existingApp ??
     initializeApp(
@@ -41,7 +38,6 @@ export function getFirebaseAdmin(): FirebaseAdminServices {
             'FIREBASE_ADMIN_PRIVATE_KEY',
           ).replace(/\\n/g, '\n'),
         }),
-        storageBucket,
       },
       ADMIN_APP_NAME,
     )
@@ -53,6 +49,5 @@ export function getFirebaseAdmin(): FirebaseAdminServices {
   return {
     auth: getAuth(initializedApp),
     db: getFirestore(initializedApp),
-    storage: getStorage(initializedApp),
   }
 }
