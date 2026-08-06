@@ -2,7 +2,7 @@ import type { DecodedIdToken } from 'firebase-admin/auth'
 import { FieldValue } from 'firebase-admin/firestore'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-import { getFirebaseAdmin } from '../_lib/firebaseAdmin'
+import { getFirebaseAdmin } from '../_lib/firebaseAdmin.js'
 
 const PLATFORM_ROLES = [
   'user',
