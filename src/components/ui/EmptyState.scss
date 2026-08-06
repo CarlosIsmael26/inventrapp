@@ -1,0 +1,37 @@
+.ui-empty-state {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+
+  h3 {
+    margin: 16px 0 0;
+    color: #30293b;
+    font-size: 1rem;
+  }
+
+  p {
+    max-width: 430px;
+    margin: 8px 0 0;
+    color: #8b8496;
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+}
+
+.ui-empty-state__icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #6744e4;
+  background: #f2eeff;
+}
+
+.ui-empty-state__action {
+  margin-top: 20px;
+}

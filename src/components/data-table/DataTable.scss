@@ -1,0 +1,87 @@
+.data-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 16px 20px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  th {
+    color: #918a9d;
+    background: #fbfafe;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  td {
+    color: #5e5869;
+    border-top: 1px solid #f0edf5;
+    font-size: 0.88rem;
+  }
+
+  tbody tr {
+    transition: background 0.18s ease;
+  }
+
+  tbody tr:hover {
+    background: #fcfbff;
+  }
+}
+
+.data-table__cell--left {
+  text-align: left;
+}
+
+.data-table__cell--center {
+  text-align: center;
+}
+
+.data-table__cell--right {
+  text-align: right;
+}
+
+.data-table__state {
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: #8d8698;
+  text-align: center;
+
+  strong {
+    color: #30293b;
+    font-size: 0.95rem;
+  }
+
+  span {
+    font-size: 0.8rem;
+  }
+}
+
+.data-table__spinner {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+  border: 3px solid #e5e0f3;
+  border-top-color: #6744e4;
+  border-radius: 50%;
+  animation: data-table-spin 0.8s linear infinite;
+}
+
+@keyframes data-table-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

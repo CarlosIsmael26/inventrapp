@@ -1,0 +1,37 @@
+.ui-card {
+  border: 1px solid #ebe7f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 34px rgba(51, 38, 87, 0.06);
+  overflow: hidden;
+}
+
+.ui-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #eeeaf3;
+
+  h3 {
+    margin: 0;
+    color: #2d2738;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: #898292;
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+}
+
+.ui-card__action {
+  flex: 0 0 auto;
+}
+
+.ui-card__content {
+  padding: 24px;
+}

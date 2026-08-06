@@ -1,0 +1,85 @@
+.ui-button {
+  min-height: 45px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.ui-button--primary {
+  border: 1px solid transparent;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7553f5, #5435d1);
+  box-shadow: 0 10px 22px rgba(92, 57, 208, 0.2);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(92, 57, 208, 0.28);
+  }
+}
+
+.ui-button--secondary {
+  border: 1px solid #ddd8e8;
+  color: #5f596d;
+  background: #ffffff;
+
+  &:hover:not(:disabled) {
+    color: #5d3ed5;
+    background: #f7f5fb;
+    border-color: #ccc2df;
+  }
+}
+
+.ui-button--danger {
+  border: 1px solid #fecaca;
+  color: #b42318;
+  background: #fff4f2;
+
+  &:hover:not(:disabled) {
+    background: #feeceb;
+  }
+}
+
+.ui-button--ghost {
+  border: 1px solid transparent;
+  color: #675f73;
+  background: transparent;
+
+  &:hover:not(:disabled) {
+    color: #5d3ed5;
+    background: #f4f1ff;
+  }
+}
+
+.ui-button__spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ui-button-spin 0.7s linear infinite;
+}
+
+@keyframes ui-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
