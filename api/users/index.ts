@@ -382,25 +382,30 @@ export default async function handler(
     const authenticatedAdmin = await verifySuperAdmin(request)
 
     if (request.method === 'GET') {
-      return listUsers(response)
+      await listUsers(response)
+      return
     }
 
     const body = await readRequestBody(request)
 
     if (request.method === 'POST') {
-      return createUser(response, body, authenticatedAdmin.uid)
+      await createUser(response, body, authenticatedAdmin.uid)
+      return
     }
 
     if (request.method === 'PATCH') {
-      return updateUser(response, body, authenticatedAdmin.uid)
+      await updateUser(response, body, authenticatedAdmin.uid)
+      return
     }
 
     if (request.method === 'DELETE') {
-      return deleteUser(response, body, authenticatedAdmin.uid)
+      await deleteUser(response, body, authenticatedAdmin.uid)
+      return
     }
 
     if (request.method === 'PUT') {
-      return createPasswordResetLink(response, body)
+      await createPasswordResetLink(response, body)
+      return
     }
 
     response.statusCode = 405

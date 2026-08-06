@@ -4,6 +4,7 @@ import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
 import { SuperAdminDashboardPage } from '../modules/superadmin/SuperAdminDashboardPage'
+import { BusinessesPage } from '../modules/superadmin/BusinessesPage'
 import { UsersPage } from '../modules/superadmin/UsersPage'
 import { AdminRoute } from './AdminRoute'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -17,6 +18,7 @@ export function AppRouter() {
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<SuperAdminLayout />}>
             <Route index element={<SuperAdminDashboardPage />} />
+            <Route path="negocios" element={<BusinessesPage />} />
             <Route path="usuarios" element={<UsersPage />} />
           </Route>
         </Route>
