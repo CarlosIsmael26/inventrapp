@@ -1,7 +1,7 @@
 import {
   BarChart3, Boxes, Building2, ChevronDown, CircleDollarSign, ClipboardList,
   LayoutDashboard, LogOut, Menu, PackagePlus, Settings, ShoppingCart,
-  Store, Truck, Users, WalletCards, X,
+  Store, Truck, UserCog, Users, WalletCards, X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -38,14 +38,14 @@ const menuGroups: MenuGroup[] = [
     { to: '/app/creditos', label: 'Créditos', icon: CircleDollarSign, roles: managementRoles },
     { to: '/app/reportes', label: 'Reportes', icon: BarChart3, roles: [...managementRoles, 'viewer'] },
   ] },
-  { title: 'Negocio', items: [{ to: '/app/configuracion', label: 'Configuración', icon: Settings, roles: managementRoles }] },
+  { title: 'Negocio', items: [{ to: '/app/equipo', label: 'Equipo', icon: UserCog, roles: managementRoles }, { to: '/app/configuracion', label: 'Configuración', icon: Settings, roles: managementRoles }] },
 ]
-const pageTitles: Record<string, string> = { '/app': 'Dashboard', '/app/inventario': 'Inventario', '/app/compras': 'Compras', '/app/pos': 'Ventas y POS', '/app/cotizaciones': 'Cotizaciones', '/app/clientes': 'Clientes', '/app/proveedores': 'Proveedores', '/app/caja': 'Caja', '/app/creditos': 'Créditos', '/app/reportes': 'Reportes', '/app/configuracion': 'Configuración' }
+const pageTitles: Record<string, string> = { '/app': 'Dashboard', '/app/inventario': 'Inventario', '/app/compras': 'Compras', '/app/pos': 'Ventas y POS', '/app/cotizaciones': 'Cotizaciones', '/app/clientes': 'Clientes', '/app/proveedores': 'Proveedores', '/app/caja': 'Caja', '/app/creditos': 'Créditos', '/app/reportes': 'Reportes', '/app/equipo': 'Equipo', '/app/configuracion': 'Configuración' }
 const roleLabels: Record<BusinessRole, string> = { owner: 'Propietario', admin: 'Administrador', cashier: 'Cajero', seller: 'Vendedor', warehouse: 'Bodega', viewer: 'Solo lectura' }
 
 export function BusinessLayout() {
   const { profile } = useAuth()
-  const { memberships, currentMembership, loading, error, selectBusiness, reload } = useBusiness()
+  const { memberships, currentMembership, businessUser, loading, error, selectBusiness, reload } = useBusiness()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -63,7 +63,7 @@ export function BusinessLayout() {
         <div className="business-brand"><div className="business-brand__logo">I</div><div><strong>Inventra</strong><span>Gestión comercial</span></div><button aria-label="Cerrar menú" onClick={() => setMobileOpen(false)}><X size={20} /></button></div>
         <div className="business-switcher"><Store size={18} /><div><small>Negocio activo</small>{memberships.length > 1 ? <select value={currentMembership.id} onChange={(event) => { selectBusiness(event.target.value); navigate('/app'); setMobileOpen(false) }}>{memberships.map((item) => <option key={item.id} value={item.id}>{item.business.name}</option>)}</select> : <strong>{currentMembership.business.name}</strong>}</div><ChevronDown size={16} /></div>
         <nav className="business-menu">{visibleGroups.map((group) => <div key={group.title}><span className="business-menu__section">{group.title}</span>{group.items.map((item) => <NavLink key={item.to} to={item.to} end={item.to === '/app'} onClick={() => setMobileOpen(false)}><item.icon size={19} /><span>{item.label}</span></NavLink>)}</div>)}</nav>
-        <div className="business-sidebar__footer"><div className="business-profile"><div className="business-profile__avatar">{profile?.displayName?.charAt(0).toUpperCase() || 'U'}</div><div><strong>{profile?.displayName || 'Usuario'}</strong><span>{roleLabels[currentMembership.role]}</span></div></div><button className="business-logout" onClick={() => void handleLogout()}><LogOut size={18} /><span>Cerrar sesión</span></button></div>
+        <div className="business-sidebar__footer"><div className="business-profile"><div className="business-profile__avatar">{(businessUser?.displayName || profile?.displayName || 'U').charAt(0).toUpperCase()}</div><div><strong>{businessUser?.displayName || profile?.displayName || 'Usuario'}</strong><span>{roleLabels[currentMembership.role]}</span></div></div><button className="business-logout" onClick={() => void handleLogout()}><LogOut size={18} /><span>Cerrar sesión</span></button></div>
       </aside>
       <section className="business-content">
         <header className="business-header"><button className="business-header__menu" aria-label="Abrir menú" onClick={() => setMobileOpen(true)}><Menu size={22} /></button><div><h1>{pageTitles[location.pathname] ?? 'Inventra'}</h1><p>{currentMembership.business.name}</p></div><div className="business-header__identity"><Building2 size={20} /><div><strong>{currentMembership.business.name}</strong><span>{roleLabels[currentMembership.role]}</span></div></div></header>

@@ -1,9 +1,10 @@
 import { createContext } from 'react'
-import type { UserBusinessMembership } from '../types/membership'
+import type { BusinessUserIdentity, UserBusinessMembership } from '../types/membership'
 
 export type BusinessContextValue = {
   memberships: UserBusinessMembership[]
   currentMembership: UserBusinessMembership | null
+  businessUser: BusinessUserIdentity | null
   loading: boolean
   error: string | null
   selectBusiness: (membershipId: string) => void

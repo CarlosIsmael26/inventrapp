@@ -5,6 +5,7 @@ import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
+import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
 import { BusinessModulePlaceholder } from '../modules/business/shared/BusinessModulePlaceholder'
 import { SuperAdminDashboardPage } from '../modules/superadmin/SuperAdminDashboardPage'
 import { BusinessesPage } from '../modules/superadmin/BusinessesPage'
@@ -43,6 +44,7 @@ export function AppRouter() {
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier']} />}><Route path="caja" element={<BusinessModulePlaceholder title="Caja" description="Aquí controlaremos aperturas, cierres y movimientos de efectivo." icon={WalletCards} />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin']} />}>
               <Route path="creditos" element={<BusinessModulePlaceholder title="Créditos" description="Aquí controlaremos cuentas por cobrar y pagos pendientes." icon={CircleDollarSign} />} />
+              <Route path="equipo" element={<BusinessTeamPage />} />
               <Route path="configuracion" element={<BusinessModulePlaceholder title="Configuración" description="Aquí configuraremos los datos y preferencias del negocio." icon={Settings} />} />
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'viewer']} />}><Route path="reportes" element={<BusinessModulePlaceholder title="Reportes" description="Aquí consultaremos indicadores comerciales y operativos." icon={BarChart3} />} /></Route>

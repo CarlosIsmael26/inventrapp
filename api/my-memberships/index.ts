@@ -30,6 +30,7 @@ export default async function handler(request: ApiRequest, response: ServerRespo
       if (!business || business.status !== 'active') return []
       return [{ id: document.id, businessId: data.businessId, role: data.role, business: { id: data.businessId, name: business.name, slug: business.slug, businessType: business.businessType, currency: business.currency, timezone: business.timezone } }]
     })
-    json(response, { memberships })
+    const profile = await db.collection('users').doc(uid).get()
+    json(response, { memberships, user: { displayName: profile.data()?.displayName ?? 'Usuario', email: profile.data()?.email ?? '' } })
   } catch (error) { handleAdminApiError(response, error) }
 }

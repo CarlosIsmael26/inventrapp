@@ -1,8 +1,8 @@
 import { auth } from '../config/firebase'
-import type { BusinessRole, Membership, MembershipStatus, UserBusinessMembership } from '../types/membership'
+import type { BusinessRole, BusinessUserIdentity, Membership, MembershipStatus, UserBusinessMembership } from '../types/membership'
 
 type ApiMembership = Omit<Membership, 'createdAt' | 'updatedAt'> & { createdAt: string | null; updatedAt: string | null }
-type ApiResult = { message?: string; memberships?: ApiMembership[] | UserBusinessMembership[] }
+type ApiResult = { message?: string; memberships?: ApiMembership[] | UserBusinessMembership[]; user?: BusinessUserIdentity }
 
 async function request(path: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<ApiResult> {
   const currentUser = auth.currentUser
@@ -31,6 +31,7 @@ export async function updateMembership(businessId: string, id: string, role: Bus
 export async function deleteMembership(businessId: string, id: string): Promise<string> {
   return (await request(`/api/businesses/${encodeURIComponent(businessId)}/memberships/${encodeURIComponent(id)}`, 'DELETE')).message ?? 'Miembro retirado correctamente.'
 }
-export async function getMyMemberships(): Promise<UserBusinessMembership[]> {
-  return ((await request('/api/my-memberships', 'GET')).memberships ?? []) as UserBusinessMembership[]
+export async function getMyMemberships(): Promise<{ memberships: UserBusinessMembership[]; user: BusinessUserIdentity | null }> {
+  const result = await request('/api/my-memberships', 'GET')
+  return { memberships: (result.memberships ?? []) as UserBusinessMembership[], user: result.user ?? null }
 }

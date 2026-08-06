@@ -27,3 +27,5 @@ export type UserBusinessMembership = {
     timezone: string
   }
 }
+
+export type BusinessUserIdentity = { displayName: string; email: string }
