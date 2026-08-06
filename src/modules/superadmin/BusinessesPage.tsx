@@ -5,6 +5,7 @@ import { Button, ConfirmDialog, useToast } from '../../components/ui'
 import { updateBusiness } from '../../services'
 import type { Business } from '../../types/business'
 import { BusinessDrawer, type BusinessDrawerMode } from './businesses/BusinessDrawer'
+import { BusinessMembersDrawer } from './businesses/BusinessMembersDrawer'
 import { BusinessStats } from './businesses/BusinessStats'
 import { BusinessesTable } from './businesses/BusinessesTable'
 import { useBusinesses, type BusinessStatusFilter } from './businesses/useBusinesses'
@@ -15,6 +16,7 @@ export function BusinessesPage() {
   const toast = useToast()
   const [drawer, setDrawer] = useState<{ mode: BusinessDrawerMode; business: Business | null } | null>(null)
   const [statusBusiness, setStatusBusiness] = useState<Business | null>(null)
+  const [membersBusiness, setMembersBusiness] = useState<Business | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const {
     filteredBusinesses, loading, error, search, statusFilter,
@@ -64,11 +66,13 @@ export function BusinessesPage() {
             onView={(business) => setDrawer({ mode: 'view', business })}
             onEdit={(business) => setDrawer({ mode: 'edit', business })}
             onToggleStatus={setStatusBusiness}
+            onManageMembers={setMembersBusiness}
           />
         )}
       </section>
 
       <BusinessDrawer open={Boolean(drawer)} mode={drawer?.mode ?? 'create'} business={drawer?.business ?? null} onClose={() => setDrawer(null)} onSaved={() => void reloadBusinesses()} />
+      <BusinessMembersDrawer business={membersBusiness} onClose={() => setMembersBusiness(null)} onChanged={() => void reloadBusinesses()} />
       {statusBusiness && (
         <ConfirmDialog
           open

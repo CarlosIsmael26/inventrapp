@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, Pencil, Power, PowerOff } from 'lucide-react'
+import { Eye, MoreHorizontal, Pencil, Power, PowerOff, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '../../../components/data-table'
@@ -11,6 +11,7 @@ type Props = {
   onView: (business: Business) => void
   onEdit: (business: Business) => void
   onToggleStatus: (business: Business) => void
+  onManageMembers: (business: Business) => void
 }
 
 const typeLabels: Record<string, string> = {
@@ -18,7 +19,7 @@ const typeLabels: Record<string, string> = {
   retail_store: 'Tienda', distributor: 'Distribuidor', other: 'Otro',
 }
 
-export function BusinessesTable({ businesses, loading, onView, onEdit, onToggleStatus }: Props) {
+export function BusinessesTable({ businesses, loading, onView, onEdit, onToggleStatus, onManageMembers }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -68,6 +69,7 @@ export function BusinessesTable({ businesses, loading, onView, onEdit, onToggleS
             <div className="business-actions__menu">
               <button type="button" onClick={() => run(() => onView(business))}><Eye size={16} /> Ver detalle</button>
               <button type="button" onClick={() => run(() => onEdit(business))}><Pencil size={16} /> Editar</button>
+              <button type="button" onClick={() => run(() => onManageMembers(business))}><Users size={16} /> Gestionar equipo</button>
               <button type="button" className={business.status === 'active' ? 'business-actions__danger' : ''} onClick={() => run(() => onToggleStatus(business))}>
                 {business.status === 'active' ? <PowerOff size={16} /> : <Power size={16} />}
                 {business.status === 'active' ? 'Suspender' : 'Reactivar'}
@@ -77,7 +79,7 @@ export function BusinessesTable({ businesses, loading, onView, onEdit, onToggleS
         </div>
       ),
     },
-  ], [onEdit, onToggleStatus, onView, openId])
+  ], [onEdit, onManageMembers, onToggleStatus, onView, openId])
 
   if (loading) return <div className="businesses-loading"><Loader label="Cargando negocios..." /></div>
   if (businesses.length === 0) return <EmptyState title="No existen negocios" description="Los negocios creados o que coincidan con los filtros aparecerán aquí." />

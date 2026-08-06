@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 
 import { ToastProvider } from './components/ui'
 import { AuthProvider } from './contexts/AuthContext'
+import { BusinessProvider } from './contexts/BusinessContext'
 import App from './App'
 import './index.css'
 
@@ -11,9 +12,11 @@ createRoot(
 ).render(
   <StrictMode>
     <AuthProvider>
-      <ToastProvider>
-        <App />
-      </ToastProvider>
+      <BusinessProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </BusinessProvider>
     </AuthProvider>
   </StrictMode>,
 )

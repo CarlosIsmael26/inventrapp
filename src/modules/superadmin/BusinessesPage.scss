@@ -39,6 +39,7 @@
   .business-actions__danger{color:#b42318;&:hover{color:#b42318;background:#fff1f0}}
 }
 .data-table code{padding:4px 7px;border-radius:7px;background:#f5f3fa;color:#5e5670;font-size:.78rem}
+.members-loading,.members-error{min-height:260px;display:grid;place-items:center;text-align:center}.members-content{display:grid;gap:28px}.members-add{display:grid;gap:16px;padding:18px;border:1px solid #ebe8f3;border-radius:16px;background:#faf9fd}.members-add h3,.members-list h3{margin:0;color:#2d2639}.members-add p{margin:0;color:#817b8d;font-size:.88rem}.members-list{display:grid;gap:14px}.member-card{display:grid;gap:16px;padding:16px;border:1px solid #ebe8f3;border-radius:15px}.member-card__identity{display:flex;align-items:center;gap:11px}.member-card__identity>span{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:white;font-weight:800;background:#6744e4}.member-card__identity strong,.member-card__identity small{display:block}.member-card__identity small{margin-top:3px;color:#817b8d}.member-card__controls{display:grid;grid-template-columns:1fr auto;align-items:end;gap:14px}.member-card__actions{display:flex;gap:9px;flex-wrap:wrap}
 
 @media(max-width:1100px){.businesses-stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){

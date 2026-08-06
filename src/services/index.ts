@@ -1,5 +1,6 @@
 export * from './authService'
 export * from './businessesService'
+export * from './membershipsService'
 export * from './clientsService'
 export * from './productsService'
 export * from './usersService'

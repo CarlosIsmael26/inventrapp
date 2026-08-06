@@ -1,6 +1,14 @@
 {
   "routes": [
     {
+      "src": "/api/businesses/([^/]+)/memberships/([^/]+)",
+      "dest": "/api/memberships?businessId=$1&membershipId=$2"
+    },
+    {
+      "src": "/api/businesses/([^/]+)/memberships",
+      "dest": "/api/memberships?businessId=$1"
+    },
+    {
       "src": "/api/businesses/([^/]+)",
       "dest": "/api/businesses?businessId=$1"
     },
