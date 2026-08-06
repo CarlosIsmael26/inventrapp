@@ -22,14 +22,14 @@ export async function parseInventoryExcel(file: File): Promise<InventoryImportPr
   rows.slice(1).forEach((row, position) => {
     const rowNumber = position + 2
     if (row.every((cell) => cell === null || String(cell).trim() === '')) return
-    const code = textValue(row[indexes.codigo]); const name = textValue(row[indexes.nombre]); const brand = textValue(row[indexes.marca]); const quantity = numberValue(row[indexes.cantidad]); const unitValue = numberValue(row[indexes.valor])
+    const code = textValue(row[indexes.codigo]); const name = textValue(row[indexes.nombre]); const brand = textValue(row[indexes.marca]); const quantity = numberValue(row[indexes.cantidad]); const purchasePrice = numberValue(row[indexes.valor])
     if (!code) errors.push({ row: rowNumber, message: 'El código es obligatorio.' })
     if (!name) errors.push({ row: rowNumber, code, message: 'El nombre es obligatorio.' })
     if (!brand) errors.push({ row: rowNumber, code, message: 'La marca es obligatoria.' })
     if (quantity === null || quantity < 0 || !Number.isInteger(quantity)) errors.push({ row: rowNumber, code, message: 'La cantidad debe ser un número entero mayor o igual a cero.' })
-    if (unitValue === null || unitValue < 0) errors.push({ row: rowNumber, code, message: 'El valor debe ser un número mayor o igual a cero.' })
+    if (purchasePrice === null || purchasePrice < 0) errors.push({ row: rowNumber, code, message: 'El valor de compra debe ser un número mayor o igual a cero.' })
     const normalizedCode = code.toLocaleLowerCase('es'); if (code) codeRows.set(normalizedCode, [...(codeRows.get(normalizedCode) ?? []), rowNumber])
-    if (code && name && brand && quantity !== null && quantity >= 0 && Number.isInteger(quantity) && unitValue !== null && unitValue >= 0) products.push({ code, name, brand, quantity, unitValue })
+    if (code && name && brand && quantity !== null && quantity >= 0 && Number.isInteger(quantity) && purchasePrice !== null && purchasePrice >= 0) products.push({ code, name, brand, quantity, purchasePrice })
   })
   const duplicateCodes = [...codeRows.entries()].filter(([, positions]) => positions.length > 1).map(([code, positions]) => `${code} (filas ${positions.join(', ')})`)
   duplicateCodes.forEach((duplicate) => errors.push({ row: 0, code: duplicate, message: `Código duplicado: ${duplicate}.` }))

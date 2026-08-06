@@ -5,10 +5,12 @@ import { ApiError, type ApiRequest, handleAdminApiError, isRecord, json, readReq
 import { verifyBusinessAccess } from '../_lib/businessAccess.js'
 import { getFirebaseAdmin } from '../_lib/firebaseAdmin.js'
 
-type ProductInput = { code: string; normalizedCode: string; name: string; brand: string; quantity: number; unitValue: number }
+type ProductInput = { code: string; normalizedCode: string; name: string; brand: string; quantity: number; purchasePrice: number; salePrice: number; profitPercentage: number }
 const MAX_IMPORT_ROWS = 200
+const DEFAULT_PROFIT_PERCENTAGE = 20
 
 function codeKey(code: string): string { return Buffer.from(code, 'utf8').toString('base64url') }
+function calculateSalePrice(purchasePrice: number): number { return Math.round((purchasePrice * (1 + DEFAULT_PROFIT_PERCENTAGE / 100) + Number.EPSILON) * 100) / 100 }
 function parseNumber(value: unknown, field: string, row: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new ApiError(400, `${field} no es válido en la fila ${row}.`)
   return value
@@ -28,14 +30,15 @@ function parseProducts(value: unknown): ProductInput[] {
     if (code.length > 120 || name.length > 200 || brand.length > 120) throw new ApiError(400, `Hay texto demasiado largo en la fila ${index + 2}.`)
     const quantity = parseNumber(item.quantity, 'La cantidad', index + 2)
     if (!Number.isInteger(quantity)) throw new ApiError(400, `La cantidad debe ser entera en la fila ${index + 2}.`)
-    return { code, normalizedCode, name, brand, quantity, unitValue: parseNumber(item.unitValue, 'El valor', index + 2) }
+    const purchasePrice = parseNumber(item.purchasePrice, 'El valor de compra', index + 2)
+    return { code, normalizedCode, name, brand, quantity, purchasePrice, salePrice: calculateSalePrice(purchasePrice), profitPercentage: DEFAULT_PROFIT_PERCENTAGE }
   })
 }
 
 async function listProducts(businessId: string, response: ServerResponse): Promise<void> {
   const { db } = getFirebaseAdmin()
   const snapshot = await db.collection('businesses').doc(businessId).collection('products').get()
-  const products = snapshot.docs.map((document) => { const data = document.data(); return { id: document.id, code: data.code, name: data.name, brand: data.brand, quantity: data.quantity, unitValue: data.unitValue, createdAt: data.createdAt?.toDate?.().toISOString() ?? null, updatedAt: data.updatedAt?.toDate?.().toISOString() ?? null } }).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+  const products = snapshot.docs.map((document) => { const data = document.data(); const purchasePrice = Number(data.purchasePrice ?? data.unitValue ?? 0); return { id: document.id, code: data.code, name: data.name, brand: data.brand, quantity: data.quantity, purchasePrice, salePrice: Number(data.salePrice ?? calculateSalePrice(purchasePrice)), profitPercentage: Number(data.profitPercentage ?? DEFAULT_PROFIT_PERCENTAGE), createdAt: data.createdAt?.toDate?.().toISOString() ?? null, updatedAt: data.updatedAt?.toDate?.().toISOString() ?? null } }).sort((a, b) => a.name.localeCompare(b.name, 'es'))
   json(response, { products })
 }
 
@@ -56,13 +59,13 @@ async function importProducts(request: ApiRequest, response: ServerResponse, bus
       const existingReference = productReferences[index]
       if (reservations[index].exists) {
         if (!existingReference || !existingProducts[index]?.exists) throw new ApiError(409, `El código ${product.code} tiene una referencia inconsistente. Contacta al administrador.`)
-        transaction.update(existingReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: FieldValue.increment(product.quantity), unitValue: product.unitValue, status: 'active', updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
+        transaction.update(existingReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: FieldValue.increment(product.quantity), purchasePrice: product.purchasePrice, salePrice: product.salePrice, profitPercentage: product.profitPercentage, status: 'active', updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid })
         updatedCount += 1
         return
       }
       const productReference = businessReference.collection('products').doc()
       transaction.create(codeReferences[index], { productId: productReference.id, normalizedCode: product.normalizedCode, createdAt: FieldValue.serverTimestamp() })
-      transaction.create(productReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: product.quantity, unitValue: product.unitValue, status: 'active', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdBy: actorUid, updatedBy: actorUid })
+      transaction.create(productReference, { code: product.code, normalizedCode: product.normalizedCode, name: product.name, brand: product.brand, quantity: product.quantity, purchasePrice: product.purchasePrice, salePrice: product.salePrice, profitPercentage: product.profitPercentage, status: 'active', createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdBy: actorUid, updatedBy: actorUid })
       createdCount += 1
     })
   })
