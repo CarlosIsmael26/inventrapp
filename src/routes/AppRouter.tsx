@@ -8,6 +8,7 @@ import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage
 import { BusinessSettingsPage } from '../modules/business/BusinessSettingsPage'
 import { InventoryPage } from '../modules/business/InventoryPage'
 import { QuotationsPage } from '../modules/business/QuotationsPage'
+import { QuoteEditorPage } from '../modules/business/quotations/QuoteEditorPage'
 import { SalesPage } from '../modules/business/SalesPage'
 import { BusinessTeamPage } from '../modules/business/BusinessTeamPage'
 import { BusinessModulePlaceholder } from '../modules/business/shared/BusinessModulePlaceholder'
@@ -44,7 +45,7 @@ export function AppRouter() {
               <Route path="pos" element={<SalesPage />} />
               <Route path="clientes" element={<BusinessModulePlaceholder title="Clientes" description="Aquí administraremos clientes y su historial de compras." icon={Users} />} />
             </Route>
-            <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<QuotationsPage />} /></Route>
+            <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<QuotationsPage />} /><Route path="cotizaciones/nueva" element={<QuoteEditorPage />} /><Route path="cotizaciones/:quotationId/editar" element={<QuoteEditorPage />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier']} />}><Route path="caja" element={<BusinessModulePlaceholder title="Caja" description="Aquí controlaremos aperturas, cierres y movimientos de efectivo." icon={WalletCards} />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin']} />}>
               <Route path="creditos" element={<BusinessModulePlaceholder title="Créditos" description="Aquí controlaremos cuentas por cobrar y pagos pendientes." icon={CircleDollarSign} />} />

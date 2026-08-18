@@ -35,8 +35,8 @@ function isoDate(value: unknown): string | null {
   if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') return value.toDate().toISOString()
   return null
 }
-function serialize(document: FirebaseFirestore.QueryDocumentSnapshot): Record<string, unknown> {
-  const data = document.data()
+function serialize(document: FirebaseFirestore.DocumentSnapshot): Record<string, unknown> {
+  const data = document.data() ?? {}
   return { id: document.id, ...data, validUntil: isoDate(data.validUntil), createdAt: isoDate(data.createdAt), convertedAt: isoDate(data.convertedAt) }
 }
 
@@ -97,12 +97,42 @@ async function createQuotation(request: ApiRequest, response: ServerResponse, bu
   json(response, { message: 'Cotización creada correctamente.', quotation: { id: quoteReference.id, ...quotation, validUntil: validUntil.toISOString(), createdAt: new Date().toISOString() } }, 201)
 }
 
+async function updateQuotation(request: ApiRequest, response: ServerResponse, businessId: string, quotationId: string, actorUid: string): Promise<void> {
+  const body = await readRequestBody(request)
+  if (!isRecord(body)) throw new ApiError(400, 'Los datos enviados no son válidos.')
+  const customerName = requiredString(body.customerName, 'El nombre del cliente es obligatorio.')
+  if (customerName.length > 160) throw new ApiError(400, 'El nombre del cliente es demasiado largo.')
+  const customerEmail = optionalString(body.customerEmail, 200)
+  const customerPhone = optionalString(body.customerPhone, 40)
+  const notes = optionalString(body.notes, 1000)
+  const validUntilText = requiredString(body.validUntil, 'La fecha de validez es obligatoria.')
+  const validUntil = new Date(`${validUntilText}T23:59:59`)
+  if (Number.isNaN(validUntil.getTime()) || validUntil < new Date()) throw new ApiError(400, 'La fecha de validez no puede estar vencida.')
+  const requestedItems = parseItems(body.items)
+  const { db } = getFirebaseAdmin()
+  const businessReference = db.collection('businesses').doc(businessId)
+  const quoteReference = businessReference.collection('quotations').doc(quotationId)
+  await db.runTransaction(async (transaction) => {
+    const productReferences = requestedItems.map((item) => businessReference.collection('products').doc(item.productId))
+    const [quotation, ...products] = await Promise.all([transaction.get(quoteReference), ...productReferences.map((reference) => transaction.get(reference))])
+    if (!quotation.exists) throw new ApiError(404, 'La cotización ya no existe.')
+    if (quotation.data()?.status === 'converted') throw new ApiError(409, 'Una cotización convertida en venta ya no se puede modificar.')
+    const items = requestedItems.map((item, index) => { const product = products[index]; const data = product.data(); if (!product.exists || data?.status === 'deleted') throw new ApiError(409, 'Uno de los productos ya no está disponible.'); const unitPrice = Number(data?.salePrice ?? 0); if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new ApiError(409, `El producto ${String(data?.name ?? '')} no tiene un precio de venta válido.`); return { productId: item.productId, code: String(data?.code ?? ''), name: String(data?.name ?? ''), brand: String(data?.brand ?? ''), quantity: item.quantity, unitPrice, total: roundMoney(item.quantity * unitPrice) } })
+    const subtotal = roundMoney(items.reduce((sum, item) => sum + item.total, 0)); const tax = roundMoney(subtotal * TAX_RATE); const total = roundMoney(subtotal + tax)
+    const updated = { customerName, customerEmail, customerPhone, notes, taxRate: TAX_RATE, subtotal, tax, total, items, validUntil: Timestamp.fromDate(validUntil), updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid }
+    transaction.update(quoteReference, updated)
+  })
+  const current = await quoteReference.get()
+  json(response, { message: 'Cotización actualizada correctamente.', quotation: serialize(current) })
+}
+
 export default async function handler(request: ApiRequest, response: ServerResponse): Promise<void> {
   try {
     const businessId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('businessId'), 'El negocio es obligatorio.')
     if (request.method === 'GET') { await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await listQuotations(businessId, response) }
     if (request.method === 'POST') { const access = await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); return await createQuotation(request, response, businessId, access.token.uid) }
+    if (request.method === 'PATCH') { const access = await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); const quotationId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('quotationId'), 'La cotización es obligatoria.'); return await updateQuotation(request, response, businessId, quotationId, access.token.uid) }
     if (request.method === 'DELETE') { await verifyBusinessAccess(request, businessId, ['owner', 'admin', 'seller']); const quotationId = requiredString(new URL(request.url ?? '/', 'http://localhost').searchParams.get('quotationId'), 'La cotización es obligatoria.'); return await deleteQuotation(response, businessId, quotationId) }
-    response.statusCode = 405; response.setHeader('Allow', 'GET, POST, DELETE'); response.end()
+    response.statusCode = 405; response.setHeader('Allow', 'GET, POST, PATCH, DELETE'); response.end()
   } catch (error) { handleAdminApiError(response, error) }
 }
