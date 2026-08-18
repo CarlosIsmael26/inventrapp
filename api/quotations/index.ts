@@ -1,4 +1,5 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { createHash } from 'node:crypto'
 import type { ServerResponse } from 'node:http'
 
 import { ApiError, type ApiRequest, handleAdminApiError, isRecord, json, readRequestBody, requiredString } from '../_lib/adminApi.js'
@@ -9,6 +10,9 @@ const TAX_RATE = 0.15
 const MAX_ITEMS = 50
 
 type RequestedItem = { productId: string; quantity: number }
+
+function clientIdFor(name: string, email: string | null, phone: string | null): string { const identity = email ? `email:${email.toLowerCase()}` : phone ? `phone:${phone.replace(/\D/g, '')}` : `name:${name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()}`; return createHash('sha256').update(identity).digest('hex').slice(0, 32) }
+function clientData(name: string, email: string | null, phone: string | null, actorUid: string): Record<string, unknown> { return { name, normalizedName: name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(), email, normalizedEmail: email?.toLowerCase() ?? null, phone, normalizedPhone: phone?.replace(/\D/g, '') || null, status: 'active', source: 'quotation', lastQuotedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid } }
 
 function roundMoney(value: number): number { return Math.round((value + Number.EPSILON) * 100) / 100 }
 function optionalString(value: unknown, maxLength: number): string | null {
@@ -71,11 +75,12 @@ async function createQuotation(request: ApiRequest, response: ServerResponse, bu
   const { db } = getFirebaseAdmin()
   const businessReference = db.collection('businesses').doc(businessId)
   const quoteReference = businessReference.collection('quotations').doc()
+  const clientReference = businessReference.collection('clients').doc(clientIdFor(customerName, customerEmail, customerPhone))
   const counterReference = businessReference.collection('counters').doc('quotations')
   let quotation: Record<string, unknown> = {}
   await db.runTransaction(async (transaction) => {
     const productReferences = requestedItems.map((item) => businessReference.collection('products').doc(item.productId))
-    const [counter, ...products] = await Promise.all([transaction.get(counterReference), ...productReferences.map((reference) => transaction.get(reference))])
+    const [counter, client, ...products] = await Promise.all([transaction.get(counterReference), transaction.get(clientReference), ...productReferences.map((reference) => transaction.get(reference))])
     const items = requestedItems.map((item, index) => {
       const product = products[index]
       if (!product.exists || product.data()?.status === 'deleted') throw new ApiError(409, 'Uno de los productos ya no está disponible.')
@@ -93,6 +98,7 @@ async function createQuotation(request: ApiRequest, response: ServerResponse, bu
     quotation = { number: `COT-${String(sequence).padStart(6, '0')}`, customerName, customerEmail, customerPhone, notes, status: 'issued', taxRate: TAX_RATE, subtotal, tax, total, currency: String(business.data()?.currency ?? 'USD'), items, validUntil: Timestamp.fromDate(validUntil), createdAt: FieldValue.serverTimestamp(), createdBy: actorUid, createdByName: String(profile.data()?.displayName ?? profile.data()?.name ?? 'Usuario') }
     transaction.set(counterReference, { value: sequence, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     transaction.create(quoteReference, quotation)
+    transaction.set(clientReference, { ...clientData(customerName, customerEmail, customerPhone, actorUid), quoteCount: FieldValue.increment(1), ...(!client.exists ? { createdAt: FieldValue.serverTimestamp(), createdBy: actorUid } : {}) }, { merge: true })
   })
   json(response, { message: 'Cotización creada correctamente.', quotation: { id: quoteReference.id, ...quotation, validUntil: validUntil.toISOString(), createdAt: new Date().toISOString() } }, 201)
 }
@@ -112,15 +118,19 @@ async function updateQuotation(request: ApiRequest, response: ServerResponse, bu
   const { db } = getFirebaseAdmin()
   const businessReference = db.collection('businesses').doc(businessId)
   const quoteReference = businessReference.collection('quotations').doc(quotationId)
+  const nextClientReference = businessReference.collection('clients').doc(clientIdFor(customerName, customerEmail, customerPhone))
   await db.runTransaction(async (transaction) => {
     const productReferences = requestedItems.map((item) => businessReference.collection('products').doc(item.productId))
-    const [quotation, ...products] = await Promise.all([transaction.get(quoteReference), ...productReferences.map((reference) => transaction.get(reference))])
+    const [quotation, nextClient, ...products] = await Promise.all([transaction.get(quoteReference), transaction.get(nextClientReference), ...productReferences.map((reference) => transaction.get(reference))])
     if (!quotation.exists) throw new ApiError(404, 'La cotización ya no existe.')
     if (quotation.data()?.status === 'converted') throw new ApiError(409, 'Una cotización convertida en venta ya no se puede modificar.')
     const items = requestedItems.map((item, index) => { const product = products[index]; const data = product.data(); if (!product.exists || data?.status === 'deleted') throw new ApiError(409, 'Uno de los productos ya no está disponible.'); const unitPrice = Number(data?.salePrice ?? 0); if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new ApiError(409, `El producto ${String(data?.name ?? '')} no tiene un precio de venta válido.`); return { productId: item.productId, code: String(data?.code ?? ''), name: String(data?.name ?? ''), brand: String(data?.brand ?? ''), quantity: item.quantity, unitPrice, total: roundMoney(item.quantity * unitPrice) } })
     const subtotal = roundMoney(items.reduce((sum, item) => sum + item.total, 0)); const tax = roundMoney(subtotal * TAX_RATE); const total = roundMoney(subtotal + tax)
     const updated = { customerName, customerEmail, customerPhone, notes, taxRate: TAX_RATE, subtotal, tax, total, items, validUntil: Timestamp.fromDate(validUntil), updatedAt: FieldValue.serverTimestamp(), updatedBy: actorUid }
     transaction.update(quoteReference, updated)
+    const previousClientId = clientIdFor(String(quotation.data()?.customerName ?? ''), typeof quotation.data()?.customerEmail === 'string' ? quotation.data()?.customerEmail : null, typeof quotation.data()?.customerPhone === 'string' ? quotation.data()?.customerPhone : null)
+    const nextClientId = clientIdFor(customerName, customerEmail, customerPhone)
+    transaction.set(nextClientReference, { ...clientData(customerName, customerEmail, customerPhone, actorUid), ...(previousClientId !== nextClientId ? { quoteCount: FieldValue.increment(1) } : {}), ...(!nextClient.exists ? { createdAt: FieldValue.serverTimestamp(), createdBy: actorUid } : {}) }, { merge: true })
   })
   const current = await quoteReference.get()
   json(response, { message: 'Cotización actualizada correctamente.', quotation: serialize(current) })

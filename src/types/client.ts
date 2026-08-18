@@ -1,0 +1,1 @@
+export type BusinessClient = { id: string; name: string; email: string | null; phone: string | null; status: 'active' | 'inactive'; quoteCount: number; lastQuotedAt: Date | null; createdAt: Date | null; updatedAt: Date | null }

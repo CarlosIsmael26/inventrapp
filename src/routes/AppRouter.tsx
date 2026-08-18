@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { BarChart3, CircleDollarSign, PackagePlus, Truck, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CircleDollarSign, PackagePlus, Truck, WalletCards } from 'lucide-react'
 
 import { BusinessLayout } from '../components/layout/BusinessLayout'
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout'
 import { LoginPage } from '../modules/auth/LoginPage'
 import { BusinessDashboardPage } from '../modules/business/BusinessDashboardPage'
+import { ClientsPage } from '../modules/business/ClientsPage'
 import { BusinessSettingsPage } from '../modules/business/BusinessSettingsPage'
 import { InventoryPage } from '../modules/business/InventoryPage'
 import { QuotationsPage } from '../modules/business/QuotationsPage'
@@ -43,7 +44,7 @@ export function AppRouter() {
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier', 'seller']} />}>
               <Route path="pos" element={<SalesPage />} />
-              <Route path="clientes" element={<BusinessModulePlaceholder title="Clientes" description="Aquí administraremos clientes y su historial de compras." icon={Users} />} />
+              <Route path="clientes" element={<ClientsPage />} />
             </Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'seller']} />}><Route path="cotizaciones" element={<QuotationsPage />} /><Route path="cotizaciones/nueva" element={<QuoteEditorPage />} /><Route path="cotizaciones/:quotationId/editar" element={<QuoteEditorPage />} /></Route>
             <Route element={<BusinessRoleRoute allowedRoles={['owner', 'admin', 'cashier']} />}><Route path="caja" element={<BusinessModulePlaceholder title="Caja" description="Aquí controlaremos aperturas, cierres y movimientos de efectivo." icon={WalletCards} />} /></Route>
