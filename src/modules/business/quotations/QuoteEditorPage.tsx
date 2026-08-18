@@ -10,7 +10,6 @@ import type { InventoryProduct } from '../../../types/inventory'
 import type { Quotation } from '../../../types/quotation'
 
 import './QuoteEditorPage.scss'
-import './QuoteProductPicker.scss'
 
 type DraftItem = { productId: string; quantity: string }
 function futureDate(days: number): string { const value = new Date(); value.setDate(value.getDate() + days); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}` }
