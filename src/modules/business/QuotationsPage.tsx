@@ -63,7 +63,7 @@ export function QuotationsPage() {
     try {
       setExportingShortages(true)
       const { exportQuotationShortages } = await import('./quotations/exportQuotationShortages')
-      const shortageCount = await exportQuotationShortages(selected, products, businessName)
+      const shortageCount = await exportQuotationShortages(selected, products, businessName, currentMembership?.business.logoUrl)
       if (!shortageCount) return toast.success('Stock suficiente', 'El inventario actual cubre todos los productos de las cotizaciones seleccionadas.')
       toast.success('Reporte generado', `Se descargó el Excel con ${shortageCount} producto${shortageCount === 1 ? '' : 's'} por comprar.`)
     } catch (exportError) { toast.error('No fue posible generar el reporte', exportError instanceof Error ? exportError.message : undefined) }

@@ -89,7 +89,7 @@ export function InventoryPage() {
       setExporting(true)
       const audit = await getInventoryAudit(businessId)
       const { exportInventoryAudit } = await import('./inventory/exportInventoryAudit')
-      await exportInventoryAudit(audit)
+      await exportInventoryAudit(audit, currentMembership?.business.logoUrl)
       toast.success('Excel exportado', 'Se descargó el inventario actual y su historial de movimientos.')
     } catch (requestError) {
       toast.error('No fue posible exportar', requestError instanceof Error ? requestError.message : undefined)
